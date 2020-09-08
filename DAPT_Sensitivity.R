@@ -424,55 +424,40 @@ TG_all <- function(num_days, pt_count, WSE_mat, Qobs, Q_id) {
   return(tg)
 }
 
-#Calculate BAM input data for the PAD
-PAD_bamdata <- function(WSE_all, WSE_Q, Q, bamdata, xvec, rivname){
-  #Calculate dA
-  calcdA_mat <- function(w, h) {
-    stopifnot(all(dim(w) == dim(h)))
-    dA <- w
-    for (i in 1:nrow(dA)) {
-      dA[i, ] <- calcdA_vec(w[i, ], h[i, ])
+#PAD
+test_Q_all <- function(bamdata, Q_ADCP, Q_time, WSE_time){
+  Q_num <- lapply(as.list(2:length(Q_ADCP)), function(Q){
+    Q_num_list = list()
+    if(choose(length(Q_ADCP), Q)>10){
+      for(i in c(1:10)){
+        time_id = sort(sample(c(1:length(Q_ADCP)), Q))
+        Q_sam = approx(x = Q_time[time_id], y = Q_ADCP[time_id], xout = WSE_time, rule = 2)$y
+        data = bam_data(w = bamdata$Wobs, 
+                        s = bamdata$Sobs, 
+                        dA = bamdata$dAobs,
+                        Qhat = Q_sam)
+        prior_df = generate_prior_df(bamdata = data, n_levels = 1, true = 1, var_scale = 1)
+        manning = run_and_validate_bam(bamdata = data, new_df = prior_df[3,], n_levels = 1, qval = c(1:ncol(bamdata$Wobs)))
+        Q_num_list[[i]] = list(time_id, manning)
+        print(Q)
+      }
+    }else{
+      for(i in c(1:choose(length(Q_ADCP), Q))){
+        time_id = sort(combn(c(1:length(Q_ADCP)), Q)[,i])
+        Q_sam = approx(x = Q_time[time_id], y = Q_ADCP[time_id], xout = WSE_time, rule = 2)$y
+        data = bam_data(w = bamdata$Wobs, 
+                        s = bamdata$Sobs, 
+                        dA = bamdata$dAobs,
+                        Qhat = Q_sam)
+        
+        prior_df = generate_prior_df(bamdata = data, n_levels = 1, true = 1, var_scale = 1)
+        manning = run_and_validate_bam(bamdata = data, new_df = prior_df[3,], n_levels = 1, qval = exp(bamdata$logQ_hat))
+        Q_num_list[[i]] = list(time_id, manning)
+      }
     }
-    dA
-  }
-  calcdA_vec <- function(w, h) {
-    words <- order(w)
-    warr <- w[words]
-    harr <- h[words]
-    delh <- c(0, diff(harr))
-    delA <- cumsum(warr * delh)
-    dA <- 1:length(w)
-    dA[words] <- delA
-    dA
-  }
-  
-  #Calculate slope
-  calcslope <- function(xvec, hmat) {
-    dH <- apply(hmat, 2, function(x) c(NA, -diff(x)))
-    dX_vec <- c(NA, diff(xvec))
-    dX <- matrix(dX_vec, ncol = ncol(hmat), nrow = nrow(hmat),
-                 byrow = FALSE)
-    out <- dH / dX
-  }
-  if(rivname == "Rochers"){
-    WSE_all$date = as.Date(as.character(WSE_all$new_time), format = "%m/%d/%Y")
-  }else if(rivname == "Fletcher"){
-    WSE_all$date = as.Date(as.character(WSE_all$new_time), format = "%m/%d/%Y")
-  }else{
-    WSE_all$date = as.Date(WSE_all$new_time)
-  }
-  
-  WSE_all = aggregate(.~date, data = WSE_all, FUN = mean)
-  height = t(WSE_all[, 4:ncol(WSE_all)])
-  width = matrix(bamdata$Wobs[1,1], nrow = (ncol(WSE_all)-3), ncol = nrow(WSE_all))
-  dA = calcdA_mat(width, height)
-  slope = calcslope(xvec = xvec, hmat = height)
-  slope = rbind(colMeans(slope, na.rm = TRUE), slope)
-  slope = slope[c(1, 3:nrow(slope)),]
-  slope[slope<=0] = min(slope[slope>0], na.rm = TRUE)
-  slope[is.na(slope)] = mean(slope, na.rm = TRUE)
-  data = bam_data(w = width, s = slope, dA = dA, Qhat = exp(bamdata$logQ_hat))
-  return(data)
+    return(Q_num_list)
+  })
+  return(Q_num)
 }
 
 
