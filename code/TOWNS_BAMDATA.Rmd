@@ -1,0 +1,35 @@
+---
+title: "TOWNS_BAMDATA"
+author: "Merritt Harlan"
+date: "12/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tanana
+#### Load centerline data and pressure transducer locations
+```{r Tanana spatial, message=FALSE, warning=FALSE}
+library(sf)
+
+#setwd("input")
+Tanana_cl <- shapefile("input/Centerline/Tan_cl.shp")
+
+```
+#### Get elevation data
+
+```{r Tanana DEM, message=FALSE, warning=FALSE}
+library(elevatr)
+Tanana_WSE <- readRDS("input/WSE/Tanana_WSE_Q_15_min.rds")
+Tanana_DEM <- raster("input/DEM/Merged_Tan_DEM.tif")
+
+
+```
+
+#### Extract width from elevation and WSE
+
+#### Calculate dA
+
+###
