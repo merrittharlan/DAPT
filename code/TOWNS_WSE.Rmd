@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(dplyr)
 library(DT)
-Tanana_WSE <- data.frame(read_csv("../input/Raw/TananaWSE.csv", col_names = TRUE)[,c(1:15)])
+Tanana_WSE <- data.frame(read_csv("../input/TOWNS/Raw/TananaWSE.csv", col_names = TRUE)[,c(1:15)])
 Tanana_WSE$time <- as.POSIXct(paste0(Tanana_WSE$Date, Tanana_WSE$Time_min), format = "%m/%d/%Y%H:%M:%S")+10800
 
 attr(Tanana_WSE$time, "tzone") <- "America/Los_Angeles"
@@ -94,10 +94,10 @@ Tanana_WSE_Q_6_hrs <-  Tanana_long %>% group_by(Date = cut(time, breaks=every6hr
 Tanana_WSE_Q_15_min <-  Tanana_long %>% group_by(Date = time, ID) %>%
    summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
 
-saveRDS(Tanana_WSE_Q_daily, "../input/WSE/Tanana_WSE_Q_daily.rds")
-saveRDS(Tanana_WSE_Q_hourly, "../input/WSE/Tanana_WSE_Q_hourly.rds")
-saveRDS(Tanana_WSE_Q_6_hrs, "../input/WSE/Tanana_WSE_Q_6_hrs.rds")
-saveRDS(Tanana_WSE_Q_15_min, "../input/WSE/Tanana_WSE_Q_15_min.rds")
+saveRDS(Tanana_WSE_Q_daily, "../input/TOWNS/WSE/Tanana_WSE_Q_daily.rds")
+saveRDS(Tanana_WSE_Q_hourly, "../input/TOWNS/WSE/Tanana_WSE_Q_hourly.rds")
+saveRDS(Tanana_WSE_Q_6_hrs, "../input/TOWNS/WSE/Tanana_WSE_Q_6_hrs.rds")
+saveRDS(Tanana_WSE_Q_15_min, "../input/TOWNS/WSE/Tanana_WSE_Q_15_min.rds")
 
 ```
 
@@ -105,7 +105,7 @@ saveRDS(Tanana_WSE_Q_15_min, "../input/WSE/Tanana_WSE_Q_15_min.rds")
 #### Load raw WSE data
 ```{r Olentangy WSE, message=FALSE, warning=FALSE}
 library(readr)
-Olentangy_WSE <- t(read_csv("../input/Raw/OlentangyH.csv", col_names = FALSE))[,1:20]
+Olentangy_WSE <- t(read_csv("../input/TOWNS/Raw/OlentangyH.csv", col_names = FALSE))[,1:20]
 Olentangy_WSE_df <- data.frame(WSE = as.numeric(Olentangy_WSE), 
                               time = rep(c(1:nrow(Olentangy_WSE)), times = ncol(Olentangy_WSE)),
                               ID = rep(c(1:ncol(Olentangy_WSE)), each = nrow(Olentangy_WSE)))
@@ -115,7 +115,7 @@ Olentangy_WSE_df <- data.frame(WSE = as.numeric(Olentangy_WSE),
 
 ```{r Olentangy Q, message=FALSE, warning=FALSE}
 library(dataRetrieval)
-Olentangy_Q <- t(read_csv("../input/Raw/OlentangyQ.csv", col_names = FALSE))
+Olentangy_Q <- t(read_csv("../input/TOWNS/Raw/OlentangyQ.csv", col_names = FALSE))
 siteNumber <- "03226800"
 parameterCd <- "00060"
 convMetric <- 0.0283168466
@@ -167,17 +167,17 @@ every15minseq <- seq.POSIXt(min(Olentangy_data_5min$time), max(Olentangy_data_5m
 Olentangy_WSE_Q_15_min <-  Olentangy_data_5min %>% group_by(Date = cut(time, breaks=every15minseq), ID) %>%
    summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
 
-saveRDS(Olentangy_WSE_Q_daily, "../input/WSE/Olentangy_WSE_Q_daily.rds")
-saveRDS(Olentangy_WSE_Q_hourly, "../input/WSE/Olentangy_WSE_Q_hourly.rds")
-saveRDS(Olentangy_WSE_Q_6_hrs, "../input/WSE/Olentangy_WSE_Q_6_hrs.rds")
-saveRDS(Olentangy_WSE_Q_15_min, "../input/WSE/Olentangy_WSE_Q_15_min.rds")
+saveRDS(Olentangy_WSE_Q_daily, "../input/TOWNS/WSE/Olentangy_WSE_Q_daily.rds")
+saveRDS(Olentangy_WSE_Q_hourly, "../input/TOWNS/WSE/Olentangy_WSE_Q_hourly.rds")
+saveRDS(Olentangy_WSE_Q_6_hrs, "../input/TOWNS/WSE/Olentangy_WSE_Q_6_hrs.rds")
+saveRDS(Olentangy_WSE_Q_15_min, "../input/TOWNS/WSE/Olentangy_WSE_Q_15_min.rds")
 
 ```
 ## Willamette
 #### Load raw WSE data
 ```{r Willamette WSE, message=FALSE, warning=FALSE}
 library(stringr)
-Willamette_WSE <- data.frame(read.table("../input/Raw/Willamette2015WSE.txt", fill = TRUE, header = TRUE))
+Willamette_WSE <- data.frame(read.table("../input/TOWNS/Raw/Willamette2015WSE.txt", fill = TRUE, header = TRUE))
 Willamette_WSE$HHMMSS <- str_pad(Willamette_WSE$HHMMSS, 6, pad = "0")
 Willamette_WSE$time <- as.POSIXct(paste0(Willamette_WSE$YYYYMMDD, Willamette_WSE$HHMMSS), format = "%Y%m%d%H%M")+10800
 attr(Willamette_WSE$time, "tzone") <- "America/Los_Angeles"
@@ -246,17 +246,17 @@ Willamette_WSE_Q_6_hrs <-  Willamette_long %>% group_by(Date = cut(time, breaks=
 Willamette_WSE_Q_15_min <-  Willamette_long %>% group_by(Date = time, ID) %>%
    summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
 
-saveRDS(Willamette_WSE_Q_daily, "../input/WSE/Willamette_WSE_Q_daily.rds")
-saveRDS(Willamette_WSE_Q_hourly, "../input/WSE/Willamette_WSE_Q_hourly.rds")
-saveRDS(Willamette_WSE_Q_6_hrs, "../input/WSE/Willamette_WSE_Q_6_hrs.rds")
-saveRDS(Willamette_WSE_Q_15_min, "../input/WSE/Willamette_WSE_Q_15_min.rds")
+saveRDS(Willamette_WSE_Q_daily, "../input/TOWNS/WSE/Willamette_WSE_Q_daily.rds")
+saveRDS(Willamette_WSE_Q_hourly, "../input/TOWNS/WSE/Willamette_WSE_Q_hourly.rds")
+saveRDS(Willamette_WSE_Q_6_hrs, "../input/TOWNS/WSE/Willamette_WSE_Q_6_hrs.rds")
+saveRDS(Willamette_WSE_Q_15_min, "../input/TOWNS/WSE/Willamette_WSE_Q_15_min.rds")
 
 ```
 ## North Saskatchewan
 #### Load raw WSE data
 ```{r North_Sask WSE, message=FALSE, warning=FALSE}
 library(readr)
-North_Sask_WSE <- data.frame(read_csv("../input/Raw/Sask_WSE.csv"))
+North_Sask_WSE <- data.frame(read_csv("../input/TOWNS/Raw/Sask_WSE.csv"))
 North_Sask_WSE$time <- as.POSIXct(North_Sask_WSE$Time, format = "%m/%d/%Y %H:%M")+3600
 attr(North_Sask_WSE$time, "tzone") <- "America/Chicago"
 North_Sask_WSE_df <- North_Sask_WSE[,c(11, 2:10)]
@@ -322,10 +322,10 @@ North_Sask_WSE_Q_6_hrs <-  North_Sask_long %>% group_by(Date = cut(time, breaks=
 North_Sask_WSE_Q_15_min <-  North_Sask_long %>% group_by(Date = time, ID) %>%
    summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
 
-saveRDS(North_Sask_WSE_Q_daily, "../input/WSE/North_Sask_WSE_Q_daily.rds")
-saveRDS(North_Sask_WSE_Q_hourly, "../input/WSE/North_Sask_WSE_Q_hourly.rds")
-saveRDS(North_Sask_WSE_Q_6_hrs, "../input/WSE/North_Sask_WSE_Q_6_hrs.rds")
-saveRDS(North_Sask_WSE_Q_15_min, "../input/WSE/North_Sask_WSE_Q_15_min.rds")
+saveRDS(North_Sask_WSE_Q_daily, "../input/TOWNS/WSE/North_Sask_WSE_Q_daily.rds")
+saveRDS(North_Sask_WSE_Q_hourly, "../input/TOWNS/WSE/North_Sask_WSE_Q_hourly.rds")
+saveRDS(North_Sask_WSE_Q_6_hrs, "../input/TOWNS/WSE/North_Sask_WSE_Q_6_hrs.rds")
+saveRDS(North_Sask_WSE_Q_15_min, "../input/TOWNS/WSE/North_Sask_WSE_Q_15_min.rds")
 
 ```
 ## Sacramento
@@ -335,10 +335,10 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(DT)
-LowSac_vp1 <- read_csv("../input/Raw/LowSac_PT_vp1.csv")
-LowSac_vp2 <- read_csv("../input/Raw/LowSac_PT_vp2.csv")
-UpSac_vp1 <- read_csv("../input/Raw/UpSac_PT_vp1.csv")
-UpSac_vp2 <- read_csv("../input/Raw/UpSac_PT_vp2.csv")
+LowSac_vp1 <- read_csv("../input/TOWNS/Raw/LowSac_PT_vp1.csv")
+LowSac_vp2 <- read_csv("../input/TOWNS/Raw/LowSac_PT_vp2.csv")
+UpSac_vp1 <- read_csv("../input/TOWNS/Raw/UpSac_PT_vp1.csv")
+UpSac_vp2 <- read_csv("../input/TOWNS/Raw/UpSac_PT_vp2.csv")
 
 Sacramento_combined <- rbind(LowSac_vp1, LowSac_vp2, UpSac_vp1, UpSac_vp2)
 
@@ -498,20 +498,20 @@ Sacramento_R2_WSE_Q_15_min <-  Sacramento_R2_long %>% group_by(Date = time, ID) 
 Sacramento_R3_WSE_Q_15_min <-  Sacramento_R3_long %>% group_by(Date = time, ID) %>%
    summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
 
-saveRDS(Sacramento_R1_WSE_Q_daily, "../input/WSE/Sacramento_R1_WSE_Q_daily.rds")
-saveRDS(Sacramento_R1_WSE_Q_hourly, "../input/WSE/Sacramento_R1_WSE_Q_hourly.rds")
-saveRDS(Sacramento_R1_WSE_Q_6_hrs, "../input/WSE/Sacramento_R1_WSE_Q_6_hrs.rds")
-saveRDS(Sacramento_R1_WSE_Q_15_min, "../input/WSE/Sacramento_R1_WSE_Q_15_min.rds")
+saveRDS(Sacramento_R1_WSE_Q_daily, "../input/TOWNS/WSE/Sacramento_R1_WSE_Q_daily.rds")
+saveRDS(Sacramento_R1_WSE_Q_hourly, "../input/TOWNS/WSE/Sacramento_R1_WSE_Q_hourly.rds")
+saveRDS(Sacramento_R1_WSE_Q_6_hrs, "../input/TOWNS/WSE/Sacramento_R1_WSE_Q_6_hrs.rds")
+saveRDS(Sacramento_R1_WSE_Q_15_min, "../input/TOWNS/WSE/Sacramento_R1_WSE_Q_15_min.rds")
 
-saveRDS(Sacramento_R2_WSE_Q_daily, "../input/WSE/Sacramento_R2_WSE_Q_daily.rds")
-saveRDS(Sacramento_R2_WSE_Q_hourly, "../input/WSE/Sacramento_R2_WSE_Q_hourly.rds")
-saveRDS(Sacramento_R2_WSE_Q_6_hrs, "../input/WSE/Sacramento_R2_WSE_Q_6_hrs.rds")
-saveRDS(Sacramento_R2_WSE_Q_15_min, "../input/WSE/Sacramento_R2_WSE_Q_15_min.rds")
+saveRDS(Sacramento_R2_WSE_Q_daily, "../input/TOWNS/WSE/Sacramento_R2_WSE_Q_daily.rds")
+saveRDS(Sacramento_R2_WSE_Q_hourly, "../input/TOWNS/WSE/Sacramento_R2_WSE_Q_hourly.rds")
+saveRDS(Sacramento_R2_WSE_Q_6_hrs, "../input/TOWNS/WSE/Sacramento_R2_WSE_Q_6_hrs.rds")
+saveRDS(Sacramento_R2_WSE_Q_15_min, "../input/TOWNS/WSE/Sacramento_R2_WSE_Q_15_min.rds")
 
-saveRDS(Sacramento_R3_WSE_Q_daily, "../input/WSE/Sacramento_R3_WSE_Q_daily.rds")
-saveRDS(Sacramento_R3_WSE_Q_hourly, "../input/WSE/Sacramento_R3_WSE_Q_hourly.rds")
-saveRDS(Sacramento_R3_WSE_Q_6_hrs, "../input/WSE/Sacramento_R3_WSE_Q_6_hrs.rds")
-saveRDS(Sacramento_R3_WSE_Q_15_min, "../input/WSE/Sacramento_R3_WSE_Q_15_min.rds")
+saveRDS(Sacramento_R3_WSE_Q_daily, "../input/TOWNS/WSE/Sacramento_R3_WSE_Q_daily.rds")
+saveRDS(Sacramento_R3_WSE_Q_hourly, "../input/TOWNS/WSE/Sacramento_R3_WSE_Q_hourly.rds")
+saveRDS(Sacramento_R3_WSE_Q_6_hrs, "../input/TOWNS/WSE/Sacramento_R3_WSE_Q_6_hrs.rds")
+saveRDS(Sacramento_R3_WSE_Q_15_min, "../input/TOWNS/WSE/Sacramento_R3_WSE_Q_15_min.rds")
 
 ```
 

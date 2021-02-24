@@ -3,33 +3,384 @@ title: "TOWNS_BAMDATA"
 author: "Merritt Harlan"
 date: "12/6/2020"
 output: html_document
+
+Used with R version 3.6.1
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+##Functions------
+#### extract elevation profiles
+```{r Tanana spatial, message=FALSE, warning=FALSE}
+ortho_lines <- function(DEM, centerline_coords, scale_xs){
+  ortho_lines = list()
+  UTMcrs = crs(DEM)
+  cl_coords_df = data.frame(x=c(1:length(centerline_coords[,1])), lon=centerline_coords[,1], 
+                            lat=centerline_coords[,2])
+  mean_lon = cl_coords_df$lon[1:(length(cl_coords_df$lon)-1)]+(1/2)*diff(cl_coords_df$lon)
+  mean_lat = cl_coords_df$lat[1:(length(cl_coords_df$lat)-1)]+(1/2)*diff(cl_coords_df$lat)
+  slope = (-1)/(diff(cl_coords_df$lat)/diff(cl_coords_df$lon))
+  for (i in which(!is.na(slope))){
+    left_lon = mean_lon-(cos(atan(slope))*scale_xs)
+    left_lat = mean_lat-(sin(atan(slope))*scale_xs)
+    right_lon = mean_lon+(cos(atan(slope))*scale_xs)
+    right_lat = mean_lat+(sin(atan(slope))*scale_xs)
+    ortho_lines[[i]] = SpatialLines(list(Lines(Line(cbind(c(left_lon[i],right_lon[i]),
+                                                          c(left_lat[i], right_lat[i]))), ID=i)),
+                                    proj4string = UTMcrs)
+  }
+  ortho_lines
+}
+
+plot_elev_prof <- function(elev_prof, wse_mat, rivname){
+  for(i in 1:length(elev_prof)){
+    plot(spline(elev_prof[[i]], n = 1000), main = paste0(rivname, "\n Cross-Section #", i),
+         xlab = "Horizontal Distance", ylab = "Elevation (m)", type = "l", 
+         ylim = c(min(c(as.numeric(unlist(wse_mat[,i+2])), as.numeric(unlist(elev_prof[[i]]))), na.rm = TRUE), 
+                  max(c(as.numeric(unlist(wse_mat[,i+2])), as.numeric(unlist(elev_prof[[i]]))), na.rm = TRUE)))
+    points(seq(1, length(unlist(elev_prof[[i]])), length.out = length(unlist(wse_mat[,i+2]))), unlist(wse_mat[,i+2]), 
+           pch = 19, col = "blue")
+  }
+}
+
+#Calculate Width
+calc_width <- function(h, elev_prof, upper_l, lower_l, lower_r, upper_r, scale_prof){
+  width = matrix(nrow = nrow(h), ncol = length(elev_prof))
+  for(xs in 1:length(elev_prof)){
+    cropped_elev_prof = elev_prof[[xs]][c(upper_l[xs]:upper_r[xs])]
+    s_elev_prof = round(spline(cropped_elev_prof, n=10000)$y, 3)
+    scale = (upper_r[xs] - upper_l[xs]) *scale_prof[xs]/10000
+    s_left = round(s_elev_prof[1:round((lower_l[xs]- upper_l[xs])*(10000/(upper_r[xs] - upper_l[xs])),0)],1)
+    right_start = round((lower_r[xs]-upper_l[xs])*(10000/(upper_r[xs] - upper_l[xs])),0)
+    s_right = round(s_elev_prof[right_start:10000],1)
+    wse = intersect(s_left, s_right)
+    wse = wse[!is.na(wse)]
+    width_vec = vector()
+    for(i in 1:length(wse)){
+      width_vec[i] = (which(s_right==wse[i])[1]+right_start - which(s_left ==wse[i])[1])*scale
+    }
+    fit = lm(width_vec~wse)
+    width[,xs] = as.numeric(unlist(h[,xs]*fit$coefficients[2]+fit$coefficients[1]))
+  }
+  width
+}
+
+#Vector of distances between pt coordinates
+calc_xvec <- function(pt_coords_sp, cl){
+  coords = cl@lines[[1]]@Lines[[1]]@coords
+  csum = cumsum(pointDistance(coords[1:(nrow(coords)-1),], coords[2:nrow(coords),], lonlat = FALSE))
+  dist_mat = pointDistance(pt_coords_sp, data.frame(cl@lines[[1]]@Lines[[1]]@coords))
+  xvec = csum[apply(dist_mat, 1, FUN = which.min)]
+  return(xvec)
+}
+
+#Calculate dA
+#Calculate area
+#' Calculate partial cross-section area from DAWG-formatted width and height matrices
+#' @param w Matrix of widths
+#' @param h Matrix of heights(FROM MARK)
+calcdA_mat <- function(w, h) {
+  stopifnot(all(dim(w) == dim(h)))
+  dA <- w
+  for (i in 1:nrow(dA)) {
+    dA[i, ] <- calcdA_vec(w[i, ], h[i, ])
+  }
+  dA
+}
+
+
+#' Calculate partial cross-section area from width and height vectors (time series)
+#' @param w vector of widths
+#' @param h vector of heights(FROM MARK)
+calcdA_vec <- function(w, h) {
+  words <- order(w)
+  warr <- w[words]
+  harr <- h[words]
+  delh <- c(0, diff(as.numeric(harr)))
+  delA <- cumsum(warr * delh)
+  dA <- 1:length(w)
+  dA[words] <- delA
+  dA
+}
+
+#Calculate slope
+#' Calculate slope based on height and along-river distance
+#' @param xvec vector of x (along-stream) distances, measured from
+#' upstream-most cross-section
+#' @param hmat Matrix (space-down, time-across) of stream heights above
+#'arbitrary datum.(FROM MARK)
+calcslope <- function(xvec, hmat) {
+  dH <- apply(hmat, 2, function(x) c(NA, -diff(x)))
+  dX_vec <- c(NA, diff(xvec))
+  dX <- matrix(dX_vec, ncol = ncol(hmat), nrow = nrow(hmat),
+               byrow = FALSE)
+  out <- dH / dX
+}
+
+
+
+```
+
 ## Tanana
 #### Load centerline data and pressure transducer locations
 ```{r Tanana spatial, message=FALSE, warning=FALSE}
 library(sf)
+library(raster)
 
-#setwd("input")
-Tanana_cl <- shapefile("input/Centerline/Tan_cl.shp")
+wd = getwd()
+setwd("../input/TOWNS/Centerline/")
+Tanana_cl <- shapefile("Tan_cl.shp")
+setwd(wd)
+Tanana_PT_coords <- read.csv("../input/TOWNS/PT_coords/Tanana_PT_coords.csv")
+
+
+Tanana_bounding_box <- c(min(Tanana_PT_coords$Longitude)-10000, max(Tanana_PT_coords$Longitude)+10000,
+                      min(Tanana_PT_coords$Latitude)-10000, max(Tanana_PT_coords$Latitude)+10000)
+
+
 
 ```
-#### Get elevation data
+#### Get elevation data and DEM
 
 ```{r Tanana DEM, message=FALSE, warning=FALSE}
-library(elevatr)
-Tanana_WSE <- readRDS("input/WSE/Tanana_WSE_Q_15_min.rds")
-Tanana_DEM <- raster("input/DEM/Merged_Tan_DEM.tif")
+library(doParallel)
+Tanana_WSE_daily <- readRDS("../input/TOWNS/WSE/Tanana_WSE_Q_daily.rds")
+Tanana_DEM <- raster("../input/TOWNS/DEM/Tanana_DEM.tif")
+
+Tanana_orthos <- ortho_lines(Tanana_DEM, data.frame(Tanana_cl@lines[[1]]@Lines[[1]]@coords), 5000)
+
+#Find closest orthos to pressure transducers
+Tanana_PT_coords_sp <-SpatialPoints(Tanana_PT_coords[,3:4], proj4string = crs(Tanana_DEM))
+Tanana_dist_mat <- pointDistance(Tanana_PT_coords_sp, data.frame(Tanana_cl@lines[[1]]@Lines[[1]]@coords))
+Tanana_closest_ortho <- Tanana_orthos[apply(Tanana_dist_mat, 1, FUN = which.min)]
+
+plot(Tanana_PT_coords_sp)
+for(i in 1:length(Tanana_closest_ortho)){
+  plot(Tanana_closest_ortho[[i]], add = TRUE, col = "blue")
+}
+#copy cross section profile code at specific location
+
+numcores <- detectCores()
+cl<-makeCluster(numcores-1)
+registerDoParallel(cl)
+ptm<-proc.time()
+Tanana_elev_prof <- foreach(i=1:length(Tanana_closest_ortho), 
+                                  .combine='rbind', .packages=c('raster')) %dopar% {
+                                    extract(Tanana_DEM, Tanana_closest_ortho[[i]], method = 'simple')
+                                  }
+proc.time()-ptm
+stopCluster(cl)
+
+Tanana_scale_x <- vector()
+for(i in 1:length(Tanana_elev_prof)){
+  Tanana_scale_x[i] = 10000/length(Tanana_elev_prof[[i]])
+}
+
+plot_elev_prof(Tanana_elev_prof, Tanana_WSE_daily, "Tanana")
+#locator(n = 4)
+#manually locate the left and right banks on the x axis
+Tanana_upper_l <- c(3097.0,  2169.1, 3746.5, 1942.7, 1901.9,  3464.3,  2322.4, 1163.8,     0, 2781.0, 1426.2, 1582.6)
+Tanana_lower_l <- c(3404.9,  2378.4, 3923.6, 2102.3, 2090.9,  3652.7,  2495.4, 1842.6,  119.7, 2942.2, 1645.2, 1718.1)
+Tanana_lower_r <- c(4205.5,  2587.7, 4744.7, 4512.3, 4485.7,  5865.8,  5482.6, 3816.1, 2755.6, 6592.2, 4192.5, 5134.8)
+Tanana_upper_r <- c(4344.1,  2716.5, 4937.9, 4671.9, 4596.0,  5959.9,  5592.7, 4100.2, 2980.7, 6797.5, 4423.1, 5378.8)
+
+```
+#### Calculate width, dA, and slope
+
+```{r Tanana width, message=FALSE, warning=FALSE}
+library(gtools)
+
+xvec <- rev(calc_xvec(Tanana_PT_coords_sp, Tanana_cl))
+
+Tanana_WSE_daily <- readRDS("../input/TOWNS/WSE/Tanana_WSE_Q_daily.rds")
+Tanana_width_daily <- t(calc_width(h = Tanana_WSE_daily[,c(3:ncol(Tanana_WSE_daily))], elev_prof = Tanana_elev_prof, 
+                                  upper_l = Tanana_upper_l, lower_l = Tanana_lower_l,
+                                  lower_r = Tanana_lower_r, upper_r = Tanana_upper_r,
+                                  scale_prof = Tanana_scale_x))
+Tanana_dA_daily <- calcdA_mat(w = Tanana_width_daily, h = t(Tanana_WSE_daily[,c(3:ncol(Tanana_WSE_daily))]))
+Tanana_slope_daily <- calcslope(xvec, hmat = t(Tanana_WSE_daily[,c(3:ncol(Tanana_WSE_daily))]))
+Tanana_slope_daily <- na.replace(Tanana_slope_daily, mean(Tanana_slope_daily))
+
+
+Tanana_WSE_6_hrs <- readRDS("../input/TOWNS/WSE/Tanana_WSE_Q_6_hrs.rds")
+Tanana_width_6_hrs <- t(calc_width(h = Tanana_WSE_6_hrs[,c(3:ncol(Tanana_WSE_6_hrs))], elev_prof = Tanana_elev_prof, 
+                                  upper_l = Tanana_upper_l, lower_l = Tanana_lower_l,
+                                  lower_r = Tanana_lower_r, upper_r = Tanana_upper_r,
+                                  scale_prof = Tanana_scale_x))
+Tanana_dA_6_hrs <- calcdA_mat(w = Tanana_width_6_hrs, h = t(Tanana_WSE_6_hrs[,c(3:ncol(Tanana_WSE_6_hrs))]))
+Tanana_slope_6_hrs <- calcslope(xvec, hmat = t(Tanana_WSE_6_hrs[,c(3:ncol(Tanana_WSE_6_hrs))]))
+Tanana_slope_6_hrs <- na.replace(Tanana_slope_6_hrs, mean(Tanana_slope_6_hrs))
+
+Tanana_WSE_hourly <- readRDS("../input/TOWNS/WSE/Tanana_WSE_Q_hourly.rds")
+Tanana_width_hourly <- t(calc_width(h = Tanana_WSE_hourly[,c(3:ncol(Tanana_WSE_hourly))], elev_prof = Tanana_elev_prof, 
+                                  upper_l = Tanana_upper_l, lower_l = Tanana_lower_l,
+                                  lower_r = Tanana_lower_r, upper_r = Tanana_upper_r,
+                                  scale_prof = Tanana_scale_x))
+Tanana_dA_hourly <- calcdA_mat(w = Tanana_width_hourly, h = t(Tanana_WSE_hourly[,c(3:ncol(Tanana_WSE_hourly))]))
+Tanana_slope_hourly <- calcslope(xvec, hmat = t(Tanana_WSE_hourly[,c(3:ncol(Tanana_WSE_hourly))]))
+Tanana_slope_hourly <- na.replace(Tanana_slope_hourly, mean(Tanana_slope_hourly))
+
+Tanana_WSE_15_min <- readRDS("../input/TOWNS/WSE/Tanana_WSE_Q_15_min.rds")
+Tanana_width_15_min <- t(calc_width(h = Tanana_WSE_15_min[,c(3:ncol(Tanana_WSE_15_min))], elev_prof = Tanana_elev_prof, 
+                                  upper_l = Tanana_upper_l, lower_l = Tanana_lower_l,
+                                  lower_r = Tanana_lower_r, upper_r = Tanana_upper_r,
+                                  scale_prof = Tanana_scale_x))
+Tanana_dA_15_min <- calcdA_mat(w = Tanana_width_15_min, h = t(Tanana_WSE_15_min[,c(3:ncol(Tanana_WSE_15_min))]))
+Tanana_slope_15_min <- calcslope(xvec, hmat = t(Tanana_WSE_15_min[,c(3:ncol(Tanana_WSE_15_min))]))
+Tanana_slope_15_min <- na.replace(Tanana_slope_15_min, mean(Tanana_slope_15_min))
 
 
 ```
 
-#### Extract width from elevation and WSE
 
-#### Calculate dA
 
-###
+
+
+#### format and save bamdata
+```{r Tanana width, message=FALSE, warning=FALSE}
+library(bamr)
+Tanana_bam_daily = bam_data(w = Tanana_width_daily, s = Tanana_slope_daily, dA = Tanana_slope_daily, Qhat = as.numeric(unlist(Tanana_WSE_daily[,2])))
+
+Tanana_bam_6_hrs = bam_data(w = Tanana_width_6_hrs, s = Tanana_slope_6_hrs, dA = Tanana_slope_6_hrs, Qhat = as.numeric(unlist(Tanana_WSE_6_hrs[,2])))
+
+Tanana_bam_hourly = bam_data(w = Tanana_width_hourly, s = Tanana_slope_hourly, dA = Tanana_slope_hourly, Qhat = as.numeric(unlist(Tanana_WSE_hourly[,2])))
+
+Tanana_bam_15_min = bam_data(w = Tanana_width_15_min, s = Tanana_slope_15_min, dA = Tanana_slope_15_min, Qhat = as.numeric(unlist(Tanana_WSE_15_min[,2])))
+
+saveRDS(Tanana_bam_daily, "../input/TOWNS/BAMdata/Tanana_bam_daily.rds")
+saveRDS(Tanana_bam_6_hrs, "../input/TOWNS/BAMdata/Tanana_bam_6_hrs.rds")
+saveRDS(Tanana_bam_hourly, "../input/TOWNS/BAMdata/Tanana_bam_hourly.rds")
+saveRDS(Tanana_bam_15_min, "../input/TOWNS/BAMdata/Tanana_bam_15_min.rds")
+
+```
+
+
+## Olentangy
+#### Load centerline data and pressure transducer locations
+```{r Olentangy spatial, message=FALSE, warning=FALSE}
+library(sf)
+library(raster)
+
+wd = getwd()
+setwd("../input/TOWNS/Centerline/")
+Olentangy_cl <- shapefile("Olen_cl_UTM.shp")
+setwd(wd)
+Olentangy_PT_coords <- read.csv("../input/TOWNS/PT_coords/Olen_PT_coords.csv")
+
+```
+#### Get elevation data and DEM
+
+```{r Olentangy DEM, message=FALSE, warning=FALSE}
+library(doParallel)
+Olentangy_WSE_daily <- readRDS("../input/TOWNS/WSE/Olentangy_WSE_Q_daily.rds")
+Olentangy_DEM <- raster("../input/TOWNS/DEM/Olentangy_DEM.tif")
+
+Olentangy_orthos <- ortho_lines(Olentangy_DEM, data.frame(Olentangy_cl@lines[[1]]@Lines[[1]]@coords), 100)
+
+#Find closest orthos to pressure transducers
+Olentangy_PT_coords_sp <-SpatialPoints(Olentangy_PT_coords[,3:4], proj4string = crs(Olentangy_DEM))
+Olentangy_dist_mat <- pointDistance(Olentangy_PT_coords_sp, data.frame(Olentangy_cl@lines[[1]]@Lines[[1]]@coords))
+Olentangy_closest_ortho <- Olentangy_orthos[apply(Olentangy_dist_mat, 1, FUN = which.min)]
+
+plot(Olentangy_PT_coords_sp)
+for(i in 1:length(Olentangy_closest_ortho)){
+  plot(Olentangy_closest_ortho[[i]], add = TRUE, col = "blue")
+}
+#copy cross section profile code at specific location
+
+numcores <- detectCores()
+cl<-makeCluster(numcores-1)
+registerDoParallel(cl)
+ptm<-proc.time()
+Olentangy_elev_prof <- foreach(i=1:length(Olentangy_closest_ortho), 
+                                  .combine='rbind', .packages=c('raster')) %dopar% {
+                                    extract(Olentangy_DEM, Olentangy_closest_ortho[[i]], method = 'simple')
+                                  }
+proc.time()-ptm
+stopCluster(cl)
+
+Olentangy_scale_x <- vector()
+for(i in 1:length(Olentangy_elev_prof)){
+  Olentangy_scale_x[i] = 200/length(Olentangy_elev_prof[[i]])
+}
+
+plot_elev_prof(Olentangy_elev_prof, Olentangy_WSE_daily, "Olentangy")
+#locator(n = 4)
+Olentangy_upper_l <- c( 8.2,  8.1,  3.2,  3.3, 11.5,  4.6, 11.2, 10.3, 11.4,  7.1,  6.5, 11.3,  9.8,  1.4, 12.3,  8.7,  8.2,  8.9,  6.3, 11.5)
+Olentangy_lower_l <- c(10.5, 10.2,  5.2,  5.3, 13.2,  7.1, 13.3, 12.3, 13.3,  9.8, 10.3, 13.2, 11.3, 13.1, 14.3, 10.6, 10.4, 11.3,  7.9, 13.3)
+Olentangy_lower_r <- c(15.7, 18.5, 18.4, 25.6, 21.6, 12.7, 17.7, 18.7, 18.6, 19.5, 16.6, 20.5, 20.7, 15.7, 20.7, 15.8, 16.7, 16.4, 21.8, 20.0)
+Olentangy_upper_r <- c(19.4, 21.1, 21.2, 27.5, 23.7, 15.8, 20.8, 23.4, 22.0, 21.6, 20.4, 22.8, 22.5, 18.1, 24.6, 18.0, 20.5, 20, 23.7, 23.1)
+
+```
+
+#### Calculate width, dA, and slope
+
+```{r Olentangy width, message=FALSE, warning=FALSE}
+library(gtools)
+
+xvec <- rev(calc_xvec(Olentangy_PT_coords_sp, Olentangy_cl))
+
+Olentangy_WSE_daily <- readRDS("../input/TOWNS/WSE/Olentangy_WSE_Q_daily.rds")
+Olentangy_width_daily <- t(calc_width(h = Olentangy_WSE_daily[,c(3:ncol(Olentangy_WSE_daily))], elev_prof = Olentangy_elev_prof, 
+                                  upper_l = Olentangy_upper_l, lower_l = Olentangy_lower_l,
+                                  lower_r = Olentangy_lower_r, upper_r = Olentangy_upper_r,
+                                  scale_prof = Olentangy_scale_x))
+Olentangy_dA_daily <- calcdA_mat(w = Olentangy_width_daily, h = t(Olentangy_WSE_daily[,c(3:ncol(Olentangy_WSE_daily))]))
+Olentangy_slope_daily <- calcslope(xvec, hmat = t(Olentangy_WSE_daily[,c(3:ncol(Olentangy_WSE_daily))]))
+Olentangy_slope_daily <- na.replace(Olentangy_slope_daily, mean(Olentangy_slope_daily))
+
+
+Olentangy_WSE_6_hrs <- readRDS("../input/TOWNS/WSE/Olentangy_WSE_Q_6_hrs.rds")
+Olentangy_width_6_hrs <- t(calc_width(h = Olentangy_WSE_6_hrs[,c(3:ncol(Olentangy_WSE_6_hrs))], elev_prof = Olentangy_elev_prof, 
+                                  upper_l = Olentangy_upper_l, lower_l = Olentangy_lower_l,
+                                  lower_r = Olentangy_lower_r, upper_r = Olentangy_upper_r,
+                                  scale_prof = Olentangy_scale_x))
+Olentangy_dA_6_hrs <- calcdA_mat(w = Olentangy_width_6_hrs, h = t(Olentangy_WSE_6_hrs[,c(3:ncol(Olentangy_WSE_6_hrs))]))
+Olentangy_slope_6_hrs <- calcslope(xvec, hmat = t(Olentangy_WSE_6_hrs[,c(3:ncol(Olentangy_WSE_6_hrs))]))
+Olentangy_slope_6_hrs <- na.replace(Olentangy_slope_6_hrs, mean(Olentangy_slope_6_hrs))
+
+Olentangy_WSE_hourly <- readRDS("../input/TOWNS/WSE/Olentangy_WSE_Q_hourly.rds")
+Olentangy_width_hourly <- t(calc_width(h = Olentangy_WSE_hourly[,c(3:ncol(Olentangy_WSE_hourly))], elev_prof = Olentangy_elev_prof, 
+                                  upper_l = Olentangy_upper_l, lower_l = Olentangy_lower_l,
+                                  lower_r = Olentangy_lower_r, upper_r = Olentangy_upper_r,
+                                  scale_prof = Olentangy_scale_x))
+Olentangy_dA_hourly <- calcdA_mat(w = Olentangy_width_hourly, h = t(Olentangy_WSE_hourly[,c(3:ncol(Olentangy_WSE_hourly))]))
+Olentangy_slope_hourly <- calcslope(xvec, hmat = t(Olentangy_WSE_hourly[,c(3:ncol(Olentangy_WSE_hourly))]))
+Olentangy_slope_hourly <- na.replace(Olentangy_slope_hourly, mean(Olentangy_slope_hourly))
+
+Olentangy_WSE_15_min <- readRDS("../input/TOWNS/WSE/Olentangy_WSE_Q_15_min.rds")
+Olentangy_width_15_min <- t(calc_width(h = Olentangy_WSE_15_min[,c(3:ncol(Olentangy_WSE_15_min))], elev_prof = Olentangy_elev_prof, 
+                                  upper_l = Olentangy_upper_l, lower_l = Olentangy_lower_l,
+                                  lower_r = Olentangy_lower_r, upper_r = Olentangy_upper_r,
+                                  scale_prof = Olentangy_scale_x))
+Olentangy_dA_15_min <- calcdA_mat(w = Olentangy_width_15_min, h = t(Olentangy_WSE_15_min[,c(3:ncol(Olentangy_WSE_15_min))]))
+Olentangy_slope_15_min <- calcslope(xvec, hmat = t(Olentangy_WSE_15_min[,c(3:ncol(Olentangy_WSE_15_min))]))
+Olentangy_slope_15_min <- na.replace(Olentangy_slope_15_min, mean(Olentangy_slope_15_min))
+
+
+```
+
+
+
+
+
+#### format and save bamdata
+```{r Olentangy width, message=FALSE, warning=FALSE}
+library(bamr)
+Olentangy_bam_daily = bam_data(w = Olentangy_width_daily, s = Olentangy_slope_daily, dA = Olentangy_slope_daily, Qhat = as.numeric(unlist(Olentangy_WSE_daily[,2])))
+
+Olentangy_bam_6_hrs = bam_data(w = Olentangy_width_6_hrs, s = Olentangy_slope_6_hrs, dA = Olentangy_slope_6_hrs, Qhat = as.numeric(unlist(Olentangy_WSE_6_hrs[,2])))
+
+Olentangy_bam_hourly = bam_data(w = Olentangy_width_hourly, s = Olentangy_slope_hourly, dA = Olentangy_slope_hourly, Qhat = as.numeric(unlist(Olentangy_WSE_hourly[,2])))
+
+Olentangy_bam_15_min = bam_data(w = Olentangy_width_15_min, s = Olentangy_slope_15_min, dA = Olentangy_slope_15_min, Qhat = as.numeric(unlist(Olentangy_WSE_15_min[,2])))
+
+saveRDS(Olentangy_bam_daily, "../input/TOWNS/BAMdata/Olentangy_bam_daily.rds")
+saveRDS(Olentangy_bam_6_hrs, "../input/TOWNS/BAMdata/Olentangy_bam_6_hrs.rds")
+saveRDS(Olentangy_bam_hourly, "../input/TOWNS/BAMdata/Olentangy_bam_hourly.rds")
+saveRDS(Olentangy_bam_15_min, "../input/TOWNS/BAMdata/Olentangy_bam_15_min.rds")
+
+```
+
