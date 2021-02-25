@@ -1,0 +1,99 @@
+﻿Date,Time of measurement,"Antenna ridge to 
+transducer bottom (cm)","Antenna base to 
+Transducer top distance (cm)",antenna ridge to antenna base (cm),"Transducer offset 
+from bottom of sunder to WSE","Transducer offset from 
+top of sunder to WSE",Bottom of pole to WSE,Antenna rim to WSE (DS on pole),Antenna rim to WSE (DS on boat),Antenna rim to WSE (no DS present),Above/below?,Note
+3-Aug,17:13,,,,25,,,165.40,,,below,
+3-Aug,19:36,,,,,,,,,,above,raised to full extent
+4-Aug,16:23,,,,22.5,,,167.90,,,below,
+4-Aug,20:15,,,,,,,,,,above,raised to full extent
+5-Aug,8:15,,,,,,,,,,,
+6-Aug,8:39,,,,5.5,,,195.90,,,above,
+7-Aug,8:08,,,,8.9,,,199.30,,,above,
+7-Aug,15:22,,,,,,,,,,n/a,gps stop logging
+8-Aug,8:07,,,,4.2,,,194.60,,,above,
+8-Aug,13:38,,,,24.4,,,166.00,,,below,
+8-Aug,16:55,,,,10.8,,,201.20,,,above,raised to full extent
+9-Aug,8:01,190.40,,4.80,4.6,,,195,,,above,
+9-Aug,9:29,190.40,,4.80,25.5,,,164.9,,,below,put into h20
+9-Aug,9:40,190.40,,4.80,n/a,,,,,,,start logging
+9-Aug,17:59,190.40,,4.80,n/a,,,,,,,stop logging
+9-Aug,18:06,190.40,,4.80,4.5,,,194.9,,,above,out of h20
+10-Aug,8:05,190.40,,4.80,n/a,,,,,,n/a,logging gps
+10-Aug,9:03,190.40,,4.80,4.5,,,194.9,,,above,
+10-Aug,9:05,190.40,,4.80,27.4,,,163,,,below,in h20
+10-Aug,9:09,190.40,,4.80,n/a,,,,,,n/a,start logging sounder
+10-Aug,9:14,190.40,,4.80,27.2,,,163.2,,,below,
+10-Aug,17:35,190.40,,4.80,24.5,,,165.9,,,below,stop logging sounder
+10-Aug,17:38,190.40,,4.80,4.7,,,195.1,,,above,
+10-Aug,19:45,190.40,,4.80,n/a,,,,,,n/a,stop logging gps
+11-Aug,7:57,190.40,,4.80,7,,,197.4,,,above,"start logging gps, sounder out of h20"
+11-Aug,9:09,190.40,,4.80,23.4,,,167,,,below,depth sounder in h20
+11-Aug,9:12,190.40,,4.80,n/a,,,,,,n/a,depth sounder logging
+11-Aug,17:48,190.40,,4.80,n/a,,,,,,n/a,depth sound stop logging
+11-Aug,17:57,190.40,,4.80,3.9,,,194.3,,,above,depth sounder out
+11-Aug,19:42,190.40,,4.80,n/a,,,,,,n/a,gps stop logging
+12-Aug,7:49,190.40,,4.80,4.3,,,194.7,,,above,GPS start logging
+12-Aug,10:06,190.40,,4.80,22,,,168.4,,,below,depth sounder in h20 and start logging
+12-Aug,17:47,190.40,,4.80,22,,,168.4,,,below,depth sounder stop logging
+12-Aug,17:51,190.40,,4.80,1.8,,,192.2,,,above,depth sounder out of h2o
+12-Aug,19:52,190.40,,4.80,4.1,,,194.5,,,above,gps stop logging
+13-Aug,7:54,190.40,,4.80,0.5,,,190.9,,,above,gps on
+13-Aug,9:58,190.40,,4.80,24.1,,,166.3,,,below,depth sounder in + logging
+13-Aug,17:58,190.40,,4.80,26,,,164.4,,,below,depth sounder stop logging
+13-Aug,18:00,190.40,,4.80,5,,,195.4,,,above,depth sounder out of h2o
+13-Aug,20:01,190.40,,4.80,0,,,190.4,,,above,final GPS offset
+13-Aug,20:07,190.40,,4.80,n/a,,,,,,n/a,GPS off
+14-Aug,7:59,190.40,,4.80,3.9,,,194.3,,,above,GPS on
+14-Aug,9:03,190.40,,4.80,21.5,,,168.9,,,below,depth in and logging
+14-Aug,11:01,190.40,,4.80,4.5,,,194.9,,,above,depth sounder out and stop logging
+14-Aug,13:41,190.40,,4.80,20.2,,,170.2,,,below,start logging depth sounder in
+14-Aug,15:15,190.40,,4.80,4.8,,,195.2,,,above,deopth soudner out and stop logging
+14-Aug,16:00,190.40,,4.80,25.5,,,164.9,,,below,depth soudner in and logging
+14-Aug,16:24,190.40,,4.80,21.5,,,168.9,,,below,offset at PT
+14-Aug,16:34,190.40,,4.80,4.5,,,194.9,,,above,depth out and stop logging
+14-Aug,17:41,190.40,,4.80,2.4,,,192.8,,,above,stop logging 
+16-Aug,8:06,,189.5,4.80,n/a,21.5,,172.8,172.8,,below, sounder on
+16-Aug,9:32,,189.5,4.80,n/a,n/a,,,,,n/a,"bottom of GPS antenna to top of transducer, sounder on"
+16-Aug,19:30,,189.5,4.80,n/a,19.5,,174.8,174.8,,below,depth sounder off
+16-Aug,19:32,,189.5,4.80,n/a,n/a,,,,,n/a,GPS stop logging
+17-Aug,7:55,,189.5,4.80,n/a,14.5,,179.8,179.8,,below,GPS start logging
+17-Aug,8:08,,189.5,4.80,n/a,13,,181.3,181.3,,below,depth sounder start logging
+17-Aug,17:56,,189.5,4.80,n/a,14.2,,180.1,180.1,,below,depth sounder stop logging
+17-Aug,17:58,,189.5,4.80,n/a,n/a,,,,,n/a,gps stop logging
+18-Aug,7:52,,189.5,4.80,n/a,19.5,,174.8,174.8,,below,gps logging
+18-Aug,8:05,,189.5,4.80,n/a,n/a,,,,,n/a,depth sounder logging
+18-Aug,19:00,,189.5,4.80,n/a,17,,,,,blow,both gps and sounder turned off
+19-Aug,7:40,,189.5,4.80,,n/a,,,,,n/a,gps on
+19-Aug,7:45,,189.5,4.80,,18.5,,175.8,175.8,,below,depth sounder logging
+19-Aug,9:04,,189.5,4.80,,15.6,,178.7,178.7,,below,"new offset, flyers off boat"
+19-Aug,17:44,,189.5,4.80,,17.5,,176.8,176.8,,below,depth sounder stop logging
+19-Aug,17:46,,189.5,4.80,,n/a,,,,,n/a,gps stop logging
+20-Aug,9:56,,189.5,4.80,,16.6,,177.7,177.7,,below,gps logging
+20-Aug,10:01,,189.5,4.80,,n/a,,,,,,depth sounder logging
+20-Aug,12:20,,189.5,4.80,,14.8,,179.5,179.5,,below,depth sounder in transect
+20-Aug,12:28,,189.5,4.80,,0,,194.3,194.3,,below,depth soun der between transects
+20-Aug,15:15,,189.5,4.80,,18,,176.3,176.3,,below,depth sounder w\once flyers retrun
+20-Aug,18:40,,189.5,4.80,,17.5,,176.8,176.8,,below,depth sounder stop logging
+20-Aug,18:45,,189.5,4.80,,n/a,,,,,,gps stop logging
+21-Aug,8:00,,189.5,4.80,,15,,179.3,179.3,,below,gps logging
+21-Aug,8:05,,189.5,4.80,,n/a,,,,,,depth sounder logging
+21-Aug,19:16,,189.5,4.80,,18.5,,175.8,175.8,,below,both stop logging
+22-Aug,7:55,,189.5,4.80,,18.9,,175.4,175.4,,below,depth sounder and gps logging
+22-Aug,17:20,,189.5,4.80,,21,,173.3,173.3,,below,both stop logging
+23-Aug,7:23,,189.5,4.80,,12,,182.3,182.3,,below,
+23-Aug,13:20,,189.5,4.80,,16.5,,177.8,177.8,,below,
+23-Aug,20:05,,189.5,4.80,,14,,180.3,180.3,,below,
+23-Aug,20:07,,189.5,4.80,,n/a,,,,,n/a,
+25-Aug,7:59,,189.5,4.80,,14,,180.3,180.3,,below,
+25-Aug,10:20,,189.5,4.80,,n/a,,,,,n/a,
+25-Aug,10:45,,189.5,4.80,,n/a,,,,,n/a,
+25-Aug,10:55,,189.5,4.80,,n/a,,,,,n/a,
+25-Aug,10:59,,189.5,4.80,,,14,172.9,,172.9,below,
+25-Aug,15:27,,189.5,4.80,,16.9,,177.4,177.4,,below,
+25-Aug,18:43,,189.5,4.80,,18.3,,176,176,,below,
+26-Aug,7:52,,190,4.80,,14,,180.8,180.8,,below,gps and depth sounder logging
+26-Aug,8:15,,190,4.80,,n/a,,,,,n/a,measurment
+26-Aug,9:35,,190,4.80,,n/a,,,,,n/a,depth sounder stop logging due to bluetooth error
+26-Aug,9:53,,190,4.80,,15.5,,179.3,179.3,,below,depth sounder logging
+26-Aug,18:50,,190,4.80,,19,,175.8,175.8,,below,gps and depth sounder logging
