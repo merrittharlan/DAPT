@@ -701,18 +701,18 @@ for(i in 1:length(Sacramento_R1_elev_prof)){
 Sacramento_R1_WSE_daily
 plot_elev_prof(Sacramento_R1_elev_prof, Sacramento_R1_WSE_daily, "Sacramento_R1")
 #locator(n = 4)
-Sacramento_R1_upper_l <- c(33.6, 67.9, 19.7, 29.4, 23.0, 23.5, 29.4,  1.7, 2.2)
-Sacramento_R1_lower_l <- c(56.8, 71.4, 28.3, 35.3, 25.5, 28.9, 33.7, 23.4, 30.6)
-Sacramento_R1_lower_r <- c(68.6, 75.4, 71.6, 50.2, 39.9, 44.4, 43.4, 55.2, 49.0)
-Sacramento_R1_upper_r <- c(86.2, 79.2, 76.2, 53.7, 43.9, 53.8, 50.0, 65.6, 61.7)
+Sacramento_R1_upper_l <- c(33.6, 67.9,    0,  32.8,  32.8, 33.5, 33.5, 38.8, 61.3, 71.7)
+Sacramento_R1_lower_l <- c(56.8, 71.4,  3.0,  53.3,  53.3, 50.8, 50.8, 45.9, 65.9, 76.3)
+Sacramento_R1_lower_r <- c(68.6, 75.4, 10.1,  64.9,  64.9, 65.3, 65.3, 52.4, 70.2, 81.3)
+Sacramento_R1_upper_r <- c(86.2, 79.2, 21.8, 108.0, 108.0, 77.4, 77.4, 58.7, 75.6, 87.5)
 
-Sacramento_R1_elev_prof_corr <- Sacramento_R1_elev_prof[c(1:4, 4, 8, 8, 8, 9, 10)]
-Sacramento_rch1_elev_prof_NED_corr[[6]] <- Sac_rch1_elev_prof_NED[[6]] - 3.5
-Sacramento_rch1_elev_prof_NED_corr[[7]] <- Sac_rch1_elev_prof_NED[[7]] - 3
-Sac_rch1_elev_prof_NED_corr[[8]] <- Sac_rch1_elev_prof_NED[[8]] - 4
-Sac_rch1_elev_prof_NED_corr[[9]] <- Sac_rch1_elev_prof_NED[[9]] - 4
-Sac_rch1_elev_prof_NED_corr[[10]] <- Sac_rch1_elev_prof_NED[[10]] - 4
-Sac_rch1_scale_x_NED <- Sac_rch1_scale_x_NED[c(1:4, 4, 8, 8, 8, 9, 10)]
+Sacramento_R1_elev_prof_corr <- Sacramento_R1_elev_prof[c(1:4, 4, 7, 7, 8, 9, 10)]
+Sacramento_R1_elev_prof_corr[[6]] <- Sacramento_R1_elev_prof[[6]] - 4
+Sacramento_R1_elev_prof_corr[[7]] <- Sacramento_R1_elev_prof[[7]] - 4
+Sacramento_R1_elev_prof_corr[[8]] <- Sacramento_R1_elev_prof[[8]] - 4
+Sacramento_R1_elev_prof_corr[[9]] <- Sacramento_R1_elev_prof[[9]] - 4
+Sacramento_R1_elev_prof_corr[[10]] <- Sacramento_R1_elev_prof[[10]] - 4
+Sacramento_R1_scale_x <- Sacramento_R1_scale_x[c(1:4, 4, 7, 7, 8, 9, 10)]
 ```
 
 #### Calculate width, dA, and slope
@@ -720,11 +720,12 @@ Sac_rch1_scale_x_NED <- Sac_rch1_scale_x_NED[c(1:4, 4, 8, 8, 8, 9, 10)]
 ```{r Sacramento_R1 width, message=FALSE, warning=FALSE}
 library(gtools)
 
-xvec <-calc_xvec(Sacramento_R1_PT_coords_sp, Sacramento_R1_cl)
+xvec <-rev(calc_xvec(Sacramento_R1_PT_coords_sp, Sacramento_R1_cl))
 
 Sacramento_R1_WSE_daily <- readRDS("../input/TOWNS/WSE/Sacramento_R1_WSE_Q_daily.rds")
-Sacramento_R1_width_daily <- t(calc_width(h = Sacramento_R1_WSE_daily[,c(3:ncol(Sacramento_R1_WSE_daily))], elev_prof = Sacramento_R1_elev_prof, 
-                                  upper_l = Sacramento_R1_upper_l, lower_l = Sacramento_R1_lower_l,
+Sacramento_R1_width_daily <- t(calc_width(h = Sacramento_R1_WSE_daily[,c(3:ncol(Sacramento_R1_WSE_daily))], 
+                                          elev_prof = Sacramento_R1_elev_prof_corr,
+                                          upper_l = Sacramento_R1_upper_l, lower_l = Sacramento_R1_lower_l,
                                   lower_r = Sacramento_R1_lower_r, upper_r = Sacramento_R1_upper_r,
                                   scale_prof = Sacramento_R1_scale_x))
 Sacramento_R1_dA_daily <- calcdA_mat(w = Sacramento_R1_width_daily, h = t(Sacramento_R1_WSE_daily[,c(3:ncol(Sacramento_R1_WSE_daily))]))
@@ -787,3 +788,278 @@ saveRDS(Sacramento_R1_bam_15_min, "../input/TOWNS/BAMdata/Sacramento_R1_bam_15_m
 
 ```
 
+
+## Sacramento_R2
+#### Load centerline data and pressure transducer locations
+```{r Sacramento_R2 spatial, message=FALSE, warning=FALSE}
+library(sf)
+library(raster)
+
+wd = getwd()
+setwd("../input/TOWNS/Centerline/")
+Sacramento_R2_cl <- shapefile("Sac_rch2_UTM.shp")
+setwd(wd)
+Sacramento_R2_PT_coords <- read.csv("../input/TOWNS/PT_coords/Sac_rch2_PT_coords.csv")
+```
+#### Get elevation data and DEM
+
+```{r Sacramento_R2 DEM, message=FALSE, warning=FALSE}
+library(doParallel)
+Sacramento_R2_WSE_daily <- readRDS("../input/TOWNS/WSE/Sacramento_R2_WSE_Q_daily.rds")
+Sacramento_R2_DEM <- raster("../input/TOWNS/DEM/Sacramento_R2_DEM.tif")
+
+Sacramento_R2_orthos <- ortho_lines(Sacramento_R2_DEM, data.frame(Sacramento_R2_cl@lines[[1]]@Lines[[1]]@coords), 500)
+
+#Find closest orthos to pressure transducers
+Sacramento_R2_PT_coords_sp <- SpatialPoints(Sacramento_R2_PT_coords[,5:4], proj4string = crs(Sacramento_R2_DEM))
+Sacramento_R2_dist_mat <- pointDistance(Sacramento_R2_PT_coords_sp, data.frame(Sacramento_R2_cl@lines[[1]]@Lines[[1]]@coords))
+Sacramento_R2_closest_ortho <- Sacramento_R2_orthos[apply(Sacramento_R2_dist_mat, 1, FUN = which.min)]
+
+plot(Sacramento_R2_PT_coords_sp)
+for(i in 1:length(Sacramento_R2_closest_ortho)){
+  plot(Sacramento_R2_closest_ortho[[i]], add = TRUE, col = "blue")
+}
+#copy cross section profile code at specific location
+
+numcores <- detectCores()
+cl<-makeCluster(numcores-1)
+registerDoParallel(cl)
+ptm<-proc.time()
+Sacramento_R2_elev_prof <- foreach(i=1:length(Sacramento_R2_closest_ortho), 
+                                  .combine='rbind', .packages=c('raster')) %dopar% {
+                                    extract(Sacramento_R2_DEM, Sacramento_R2_closest_ortho[[i]], method = 'simple')
+                                  }
+proc.time()-ptm
+stopCluster(cl)
+
+Sacramento_R2_scale_x <- vector()
+for(i in 1:length(Sacramento_R2_elev_prof)){
+  Sacramento_R2_scale_x[i] = 1000/length(Sacramento_R2_elev_prof[[i]])
+}
+
+plot_elev_prof(Sacramento_R2_elev_prof, Sacramento_R2_WSE_daily, "Sacramento_R2")
+#locator(n = 4)
+Sacramento_R2_upper_l <- c(67.8, 64.3, 59.7, 41.9, 60.3, 60.5)
+Sacramento_R2_lower_l <- c(77.2, 71.1, 78.2, 49.3, 73.2, 78.2)
+Sacramento_R2_lower_r <- c(82.1, 75.2, 83.7, 55.7, 84.4, 81.7)
+Sacramento_R2_upper_r <- c(91.5, 86.5, 92.4, 60.6, 96.4, 104.1)
+
+Sacramento_R2_elev_prof_corr <- Sacramento_R2_elev_prof
+Sacramento_R2_elev_prof_corr[[1]] <- Sacramento_R2_elev_prof[[1]] - 3
+Sacramento_R2_elev_prof_corr[[2]] <- Sacramento_R2_elev_prof[[2]] - 3
+Sacramento_R2_elev_prof_corr[[3]] <- Sacramento_R2_elev_prof[[3]] - 3
+Sacramento_R2_elev_prof_corr[[4]] <- Sacramento_R2_elev_prof[[4]] - 3
+Sacramento_R2_elev_prof_corr[[5]] <- Sacramento_R2_elev_prof[[5]] - 3
+Sacramento_R2_elev_prof_corr[[6]] <- Sacramento_R2_elev_prof[[6]] - 3
+
+```
+
+#### Calculate width, dA, and slope
+
+```{r Sacramento_R2 width, message=FALSE, warning=FALSE}
+library(gtools)
+
+xvec <-rev(calc_xvec(Sacramento_R2_PT_coords_sp, Sacramento_R2_cl))
+
+Sacramento_R2_WSE_daily <- readRDS("../input/TOWNS/WSE/Sacramento_R2_WSE_Q_daily.rds")
+Sacramento_R2_width_daily <- t(calc_width(h = Sacramento_R2_WSE_daily[,c(3:ncol(Sacramento_R2_WSE_daily))], 
+                                          elev_prof = Sacramento_R2_elev_prof_corr,
+                                          upper_l = Sacramento_R2_upper_l, lower_l = Sacramento_R2_lower_l,
+                                  lower_r = Sacramento_R2_lower_r, upper_r = Sacramento_R2_upper_r,
+                                  scale_prof = Sacramento_R2_scale_x))
+Sacramento_R2_dA_daily <- calcdA_mat(w = Sacramento_R2_width_daily, h = t(Sacramento_R2_WSE_daily[,c(3:ncol(Sacramento_R2_WSE_daily))]))
+Sacramento_R2_slope_daily <- calcslope(xvec, hmat = t(Sacramento_R2_WSE_daily[,c(3:ncol(Sacramento_R2_WSE_daily))]))
+Sacramento_R2_slope_daily <- na.replace(Sacramento_R2_slope_daily, mean(Sacramento_R2_slope_daily))
+Sacramento_R2_slope_daily[1,] <- colMeans(Sacramento_R2_slope_daily, na.rm = TRUE)
+
+Sacramento_R2_WSE_6_hrs <- readRDS("../input/TOWNS/WSE/Sacramento_R2_WSE_Q_6_hrs.rds")
+Sacramento_R2_width_6_hrs <- t(calc_width(h = Sacramento_R2_WSE_6_hrs[,c(3:ncol(Sacramento_R2_WSE_6_hrs))], elev_prof = Sacramento_R2_elev_prof, 
+                                  upper_l = Sacramento_R2_upper_l, lower_l = Sacramento_R2_lower_l,
+                                  lower_r = Sacramento_R2_lower_r, upper_r = Sacramento_R2_upper_r,
+                                  scale_prof = Sacramento_R2_scale_x))
+Sacramento_R2_dA_6_hrs <- calcdA_mat(w = Sacramento_R2_width_6_hrs, h = t(Sacramento_R2_WSE_6_hrs[,c(3:ncol(Sacramento_R2_WSE_6_hrs))]))
+Sacramento_R2_slope_6_hrs <- calcslope(xvec, hmat = t(Sacramento_R2_WSE_6_hrs[,c(3:ncol(Sacramento_R2_WSE_6_hrs))]))
+Sacramento_R2_slope_6_hrs <- na.replace(Sacramento_R2_slope_6_hrs, mean(Sacramento_R2_slope_6_hrs))
+Sacramento_R2_slope_6_hrs[1,] <- colMeans(Sacramento_R2_slope_6_hrs, na.rm = TRUE)
+
+Sacramento_R2_WSE_hourly <- readRDS("../input/TOWNS/WSE/Sacramento_R2_WSE_Q_hourly.rds")
+Sacramento_R2_width_hourly <- t(calc_width(h = Sacramento_R2_WSE_hourly[,c(3:ncol(Sacramento_R2_WSE_hourly))], elev_prof = Sacramento_R2_elev_prof, 
+                                  upper_l = Sacramento_R2_upper_l, lower_l = Sacramento_R2_lower_l,
+                                  lower_r = Sacramento_R2_lower_r, upper_r = Sacramento_R2_upper_r,
+                                  scale_prof = Sacramento_R2_scale_x))
+Sacramento_R2_dA_hourly <- calcdA_mat(w = Sacramento_R2_width_hourly, h = t(Sacramento_R2_WSE_hourly[,c(3:ncol(Sacramento_R2_WSE_hourly))]))
+Sacramento_R2_slope_hourly <- calcslope(xvec, hmat = t(Sacramento_R2_WSE_hourly[,c(3:ncol(Sacramento_R2_WSE_hourly))]))
+Sacramento_R2_slope_hourly <- na.replace(Sacramento_R2_slope_hourly, mean(Sacramento_R2_slope_hourly))
+Sacramento_R2_slope_hourly[1,] <- colMeans(Sacramento_R2_slope_hourly, na.rm = TRUE)
+
+Sacramento_R2_WSE_15_min <- readRDS("../input/TOWNS/WSE/Sacramento_R2_WSE_Q_15_min.rds")
+Sacramento_R2_width_15_min <- t(calc_width(h = Sacramento_R2_WSE_15_min[,c(3:ncol(Sacramento_R2_WSE_15_min))], elev_prof = Sacramento_R2_elev_prof, 
+                                  upper_l = Sacramento_R2_upper_l, lower_l = Sacramento_R2_lower_l,
+                                  lower_r = Sacramento_R2_lower_r, upper_r = Sacramento_R2_upper_r,
+                                  scale_prof = Sacramento_R2_scale_x))
+Sacramento_R2_dA_15_min <- calcdA_mat(w = Sacramento_R2_width_15_min, h = t(Sacramento_R2_WSE_15_min[,c(3:ncol(Sacramento_R2_WSE_15_min))]))
+Sacramento_R2_slope_15_min <- calcslope(xvec, hmat = t(Sacramento_R2_WSE_15_min[,c(3:ncol(Sacramento_R2_WSE_15_min))]))
+Sacramento_R2_slope_15_min <- na.replace(Sacramento_R2_slope_15_min, mean(Sacramento_R2_slope_15_min))
+Sacramento_R2_slope_15_min[1,] <- colMeans(Sacramento_R2_slope_15_min, na.rm = TRUE)
+
+
+```
+
+
+
+
+
+#### format and save bamdata
+```{r Sacramento_R2 width, message=FALSE, warning=FALSE}
+library(bamr)
+Sacramento_R2_bam_daily = bam_data(w = Sacramento_R2_width_daily, s = Sacramento_R2_slope_daily, dA = Sacramento_R2_slope_daily, Qhat = as.numeric(unlist(Sacramento_R2_WSE_daily[,2])))
+
+Sacramento_R2_bam_6_hrs = bam_data(w = Sacramento_R2_width_6_hrs, s = Sacramento_R2_slope_6_hrs, dA = Sacramento_R2_slope_6_hrs, Qhat = as.numeric(unlist(Sacramento_R2_WSE_6_hrs[,2])))
+
+Sacramento_R2_bam_hourly = bam_data(w = Sacramento_R2_width_hourly, s = Sacramento_R2_slope_hourly, dA = Sacramento_R2_slope_hourly, Qhat = as.numeric(unlist(Sacramento_R2_WSE_hourly[,2])))
+
+Sacramento_R2_bam_15_min = bam_data(w = Sacramento_R2_width_15_min, s = Sacramento_R2_slope_15_min, dA = Sacramento_R2_slope_15_min, Qhat = as.numeric(unlist(Sacramento_R2_WSE_15_min[,2])))
+
+saveRDS(Sacramento_R2_bam_daily, "../input/TOWNS/BAMdata/Sacramento_R2_bam_daily.rds")
+saveRDS(Sacramento_R2_bam_6_hrs, "../input/TOWNS/BAMdata/Sacramento_R2_bam_6_hrs.rds")
+saveRDS(Sacramento_R2_bam_hourly, "../input/TOWNS/BAMdata/Sacramento_R2_bam_hourly.rds")
+saveRDS(Sacramento_R2_bam_15_min, "../input/TOWNS/BAMdata/Sacramento_R2_bam_15_min.rds")
+
+```
+
+
+
+## Sacramento_R3
+#### Load centerline data and pressure transducer locations
+```{r Sacramento_R3 spatial, message=FALSE, warning=FALSE}
+library(sf)
+library(raster)
+
+wd = getwd()
+setwd("../input/TOWNS/Centerline/")
+Sacramento_R3_cl <- shapefile("Sac_rch3_cl_UTM.shp")
+setwd(wd)
+Sacramento_R3_PT_coords <- read.csv("../input/TOWNS/PT_coords/Sac_rch3_PT_coords.csv")
+```
+#### Get elevation data and DEM
+
+```{r Sacramento_R3 DEM, message=FALSE, warning=FALSE}
+library(doParallel)
+Sacramento_R3_WSE_daily <- readRDS("../input/TOWNS/WSE/Sacramento_R3_WSE_Q_daily.rds")
+Sacramento_R3_DEM <- raster("../input/TOWNS/DEM/Sacramento_R3_DEM.tif")
+
+Sacramento_R3_orthos <- ortho_lines(Sacramento_R3_DEM, data.frame(Sacramento_R3_cl@lines[[1]]@Lines[[1]]@coords), 500)
+
+#Find closest orthos to pressure transducers
+Sacramento_R3_PT_coords_sp <- SpatialPoints(Sacramento_R3_PT_coords[,5:4], proj4string = crs(Sacramento_R3_DEM))
+Sacramento_R3_dist_mat <- pointDistance(Sacramento_R3_PT_coords_sp, data.frame(Sacramento_R3_cl@lines[[1]]@Lines[[1]]@coords))
+Sacramento_R3_closest_ortho <- Sacramento_R3_orthos[apply(Sacramento_R3_dist_mat, 1, FUN = which.min)]
+
+plot(Sacramento_R3_PT_coords_sp)
+for(i in 1:length(Sacramento_R3_closest_ortho)){
+  plot(Sacramento_R3_closest_ortho[[i]], add = TRUE, col = "blue")
+}
+#copy cross section profile code at specific location
+
+numcores <- detectCores()
+cl<-makeCluster(numcores-1)
+registerDoParallel(cl)
+ptm<-proc.time()
+Sacramento_R3_elev_prof <- foreach(i=1:length(Sacramento_R3_closest_ortho), 
+                                  .combine='rbind', .packages=c('raster')) %dopar% {
+                                    extract(Sacramento_R3_DEM, Sacramento_R3_closest_ortho[[i]], method = 'simple')
+                                  }
+proc.time()-ptm
+stopCluster(cl)
+
+Sacramento_R3_scale_x <- vector()
+for(i in 1:length(Sacramento_R3_elev_prof)){
+  Sacramento_R3_scale_x[i] = 1000/length(Sacramento_R3_elev_prof[[i]])
+}
+
+plot_elev_prof(Sacramento_R3_elev_prof, Sacramento_R3_WSE_daily, "Sacramento_R3")
+#locator(n = 4)
+Sacramento_R3_upper_l <- c( 82.6, 50.2,  56.2, 67.7, 68.8, 46.8, 53.5, 64.2,  53.3, 46.9, 42.6, 49.3, 49.3, 65.7, 66.6, 66.2, 56.4, 46.7, 37.4)
+Sacramento_R3_lower_l <- c( 88.9, 54.6,  59.8, 72.9, 76.0, 53.6, 56.4, 70.1,  57.6, 49.3, 45.3, 53.7, 53.7, 69.2, 70.5, 72.7, 59.9, 50.4, 41.0)
+Sacramento_R3_lower_r <- c(116.4, 91.8, 100.8, 87.7, 88.2, 68.3, 85.2, 84.3, 107.9, 88.8, 74.1, 66.6, 66.6, 77.5, 86.0, 88.5, 72.5, 66.0, 59.5)
+Sacramento_R3_upper_r <- c(125.6, 95.3, 104.0, 93.4, 91.8, 71.3, 88.3, 88.9, 111.0, 92.2, 77.4, 70.8, 70.8, 81.0, 90.0, 95.7, 77.5, 69.7, 63.3)
+
+Sacramento_R3_elev_prof_corr <- Sacramento_R3_elev_prof
+Sacramento_R3_elev_prof_corr[[12]] <- Sacramento_R3_elev_prof[[13]]
+Sacramento_R3_scale_x[12] <- Sacramento_R3_scale_x[13]
+
+
+```
+
+#### Calculate width, dA, and slope
+
+```{r Sacramento_R3 width, message=FALSE, warning=FALSE}
+library(gtools)
+
+xvec <-rev(calc_xvec(Sacramento_R3_PT_coords_sp, Sacramento_R3_cl))
+
+Sacramento_R3_WSE_daily <- readRDS("../input/TOWNS/WSE/Sacramento_R3_WSE_Q_daily.rds")
+Sacramento_R3_width_daily <- t(calc_width(h = Sacramento_R3_WSE_daily[,c(3:ncol(Sacramento_R3_WSE_daily))], 
+                                          elev_prof = Sacramento_R3_elev_prof_corr,
+                                          upper_l = Sacramento_R3_upper_l, lower_l = Sacramento_R3_lower_l,
+                                  lower_r = Sacramento_R3_lower_r, upper_r = Sacramento_R3_upper_r,
+                                  scale_prof = Sacramento_R3_scale_x))
+Sacramento_R3_dA_daily <- calcdA_mat(w = Sacramento_R3_width_daily, h = t(Sacramento_R3_WSE_daily[,c(3:ncol(Sacramento_R3_WSE_daily))]))
+Sacramento_R3_slope_daily <- calcslope(xvec, hmat = t(Sacramento_R3_WSE_daily[,c(3:ncol(Sacramento_R3_WSE_daily))]))
+Sacramento_R3_slope_daily <- na.replace(Sacramento_R3_slope_daily, mean(Sacramento_R3_slope_daily))
+Sacramento_R3_slope_daily[1,] <- colMeans(Sacramento_R3_slope_daily, na.rm = TRUE)
+
+Sacramento_R3_WSE_6_hrs <- readRDS("../input/TOWNS/WSE/Sacramento_R3_WSE_Q_6_hrs.rds")
+Sacramento_R3_width_6_hrs <- t(calc_width(h = Sacramento_R3_WSE_6_hrs[,c(3:ncol(Sacramento_R3_WSE_6_hrs))], elev_prof = Sacramento_R3_elev_prof, 
+                                  upper_l = Sacramento_R3_upper_l, lower_l = Sacramento_R3_lower_l,
+                                  lower_r = Sacramento_R3_lower_r, upper_r = Sacramento_R3_upper_r,
+                                  scale_prof = Sacramento_R3_scale_x))
+Sacramento_R3_dA_6_hrs <- calcdA_mat(w = Sacramento_R3_width_6_hrs, h = t(Sacramento_R3_WSE_6_hrs[,c(3:ncol(Sacramento_R3_WSE_6_hrs))]))
+Sacramento_R3_slope_6_hrs <- calcslope(xvec, hmat = t(Sacramento_R3_WSE_6_hrs[,c(3:ncol(Sacramento_R3_WSE_6_hrs))]))
+Sacramento_R3_slope_6_hrs <- na.replace(Sacramento_R3_slope_6_hrs, mean(Sacramento_R3_slope_6_hrs))
+Sacramento_R3_slope_6_hrs[1,] <- colMeans(Sacramento_R3_slope_6_hrs, na.rm = TRUE)
+
+Sacramento_R3_WSE_hourly <- readRDS("../input/TOWNS/WSE/Sacramento_R3_WSE_Q_hourly.rds")
+Sacramento_R3_width_hourly <- t(calc_width(h = Sacramento_R3_WSE_hourly[,c(3:ncol(Sacramento_R3_WSE_hourly))], elev_prof = Sacramento_R3_elev_prof, 
+                                  upper_l = Sacramento_R3_upper_l, lower_l = Sacramento_R3_lower_l,
+                                  lower_r = Sacramento_R3_lower_r, upper_r = Sacramento_R3_upper_r,
+                                  scale_prof = Sacramento_R3_scale_x))
+Sacramento_R3_dA_hourly <- calcdA_mat(w = Sacramento_R3_width_hourly, h = t(Sacramento_R3_WSE_hourly[,c(3:ncol(Sacramento_R3_WSE_hourly))]))
+Sacramento_R3_slope_hourly <- calcslope(xvec, hmat = t(Sacramento_R3_WSE_hourly[,c(3:ncol(Sacramento_R3_WSE_hourly))]))
+Sacramento_R3_slope_hourly <- na.replace(Sacramento_R3_slope_hourly, mean(Sacramento_R3_slope_hourly))
+Sacramento_R3_slope_hourly[1,] <- colMeans(Sacramento_R3_slope_hourly, na.rm = TRUE)
+
+Sacramento_R3_WSE_15_min <- readRDS("../input/TOWNS/WSE/Sacramento_R3_WSE_Q_15_min.rds")
+Sacramento_R3_width_15_min <- t(calc_width(h = Sacramento_R3_WSE_15_min[,c(3:ncol(Sacramento_R3_WSE_15_min))], elev_prof = Sacramento_R3_elev_prof, 
+                                  upper_l = Sacramento_R3_upper_l, lower_l = Sacramento_R3_lower_l,
+                                  lower_r = Sacramento_R3_lower_r, upper_r = Sacramento_R3_upper_r,
+                                  scale_prof = Sacramento_R3_scale_x))
+Sacramento_R3_dA_15_min <- calcdA_mat(w = Sacramento_R3_width_15_min, h = t(Sacramento_R3_WSE_15_min[,c(3:ncol(Sacramento_R3_WSE_15_min))]))
+Sacramento_R3_slope_15_min <- calcslope(xvec, hmat = t(Sacramento_R3_WSE_15_min[,c(3:ncol(Sacramento_R3_WSE_15_min))]))
+Sacramento_R3_slope_15_min <- na.replace(Sacramento_R3_slope_15_min, mean(Sacramento_R3_slope_15_min))
+Sacramento_R3_slope_15_min[1,] <- colMeans(Sacramento_R3_slope_15_min, na.rm = TRUE)
+
+
+```
+
+
+
+
+
+#### format and save bamdata
+```{r Sacramento_R3 width, message=FALSE, warning=FALSE}
+library(bamr)
+Sacramento_R3_bam_daily = bam_data(w = Sacramento_R3_width_daily, s = Sacramento_R3_slope_daily, dA = Sacramento_R3_slope_daily, Qhat = as.numeric(unlist(Sacramento_R3_WSE_daily[,2])))
+
+Sacramento_R3_bam_6_hrs = bam_data(w = Sacramento_R3_width_6_hrs, s = Sacramento_R3_slope_6_hrs, dA = Sacramento_R3_slope_6_hrs, Qhat = as.numeric(unlist(Sacramento_R3_WSE_6_hrs[,2])))
+
+Sacramento_R3_bam_hourly = bam_data(w = Sacramento_R3_width_hourly, s = Sacramento_R3_slope_hourly, dA = Sacramento_R3_slope_hourly, Qhat = as.numeric(unlist(Sacramento_R3_WSE_hourly[,2])))
+
+Sacramento_R3_bam_15_min = bam_data(w = Sacramento_R3_width_15_min, s = Sacramento_R3_slope_15_min, dA = Sacramento_R3_slope_15_min, Qhat = as.numeric(unlist(Sacramento_R3_WSE_15_min[,2])))
+
+saveRDS(Sacramento_R3_bam_daily, "../input/TOWNS/BAMdata/Sacramento_R3_bam_daily.rds")
+saveRDS(Sacramento_R3_bam_6_hrs, "../input/TOWNS/BAMdata/Sacramento_R3_bam_6_hrs.rds")
+saveRDS(Sacramento_R3_bam_hourly, "../input/TOWNS/BAMdata/Sacramento_R3_bam_hourly.rds")
+saveRDS(Sacramento_R3_bam_15_min, "../input/TOWNS/BAMdata/Sacramento_R3_bam_15_min.rds")
+
+```
