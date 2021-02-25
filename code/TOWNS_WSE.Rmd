@@ -3,6 +3,8 @@ title: "Clean Data"
 author: "Merritt Harlan"
 date: "11/21/2020"
 output: html_document
+
+R version: 4.0.2
 ---
 
 ```{r setup, include=FALSE}
@@ -457,46 +459,46 @@ ggplot(data = Sacramento_R3_long, aes(x = time, y = WSE, color = ID, group = ID)
 ```{r Sacramento save, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
-
+#add 30.9942 for corrective factor between USGS gauge level and PT WSE
 Sacramento_R1_WSE_Q_daily <- Sacramento_R1_long %>% group_by(Date = format(time, "%Y-%m-%d"), ID) %>%
-  summarize(WSE = mean(WSE, na.rm = TRUE), Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
+  summarize(WSE = mean(WSE, na.rm = TRUE)+30.9942, Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
 
 Sacramento_R2_WSE_Q_daily <- Sacramento_R2_long %>% group_by(Date = format(time, "%Y-%m-%d"), ID) %>%
-  summarize(WSE = mean(WSE, na.rm = TRUE), Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
+  summarize(WSE = mean(WSE, na.rm = TRUE)+30.9942, Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
 
 Sacramento_R3_WSE_Q_daily <- Sacramento_R3_long %>% group_by(Date = format(time, "%Y-%m-%d"), ID) %>%
-  summarize(WSE = mean(WSE, na.rm = TRUE), Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
+  summarize(WSE = mean(WSE, na.rm = TRUE)+30.9942, Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
 
 Sacramento_R1_WSE_Q_hourly <- Sacramento_R1_long %>% group_by(Date = format(time, "%Y-%m-%d %H"), ID) %>%
-  summarize(WSE = mean(WSE, na.rm = TRUE), Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
+  summarize(WSE = mean(WSE, na.rm = TRUE)+30.9942, Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
 
 Sacramento_R2_WSE_Q_hourly<- Sacramento_R2_long %>% group_by(Date = format(time, "%Y-%m-%d %H"), ID) %>%
-  summarize(WSE = mean(WSE, na.rm = TRUE), Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
+  summarize(WSE = mean(WSE, na.rm = TRUE)+30.9942, Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
 
 Sacramento_R3_WSE_Q_hourly <- Sacramento_R3_long %>% group_by(Date = format(time, "%Y-%m-%d %H"), ID) %>%
-  summarize(WSE = mean(WSE, na.rm = TRUE), Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
+  summarize(WSE = mean(WSE, na.rm = TRUE)+30.9942, Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
 
 R1_every6hrseq <- seq.POSIXt(min(Sacramento_R1_long$time), max(Sacramento_R1_long$time), by='6 hour')
 R2_every6hrseq <- seq.POSIXt(min(Sacramento_R2_long$time), max(Sacramento_R2_long$time), by='6 hour')
 R3_every6hrseq <- seq.POSIXt(min(Sacramento_R3_long$time), max(Sacramento_R3_long$time), by='6 hour')
 
 Sacramento_R1_WSE_Q_6_hrs <-  Sacramento_R1_long %>% group_by(Date = cut(time, breaks=R1_every6hrseq), ID) %>%
-   summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
+   summarize(WSE = mean(WSE)+30.9942, Q = mean(Q))%>% spread(value = WSE, key = ID)
 
 Sacramento_R2_WSE_Q_6_hrs <-  Sacramento_R2_long %>% group_by(Date = cut(time, breaks=R2_every6hrseq), ID) %>%
-   summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
+   summarize(WSE = mean(WSE)+30.9942, Q = mean(Q))%>% spread(value = WSE, key = ID)
 
 Sacramento_R3_WSE_Q_6_hrs <-  Sacramento_R3_long %>% group_by(Date = cut(time, breaks=R3_every6hrseq), ID) %>%
-   summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
+   summarize(WSE = mean(WSE)+30.9942, Q = mean(Q))%>% spread(value = WSE, key = ID)
 
 Sacramento_R1_WSE_Q_15_min <-  Sacramento_R1_long %>% group_by(Date = time, ID) %>%
-   summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
+   summarize(WSE = mean(WSE)+30.9942, Q = mean(Q))%>% spread(value = WSE, key = ID)
 
 Sacramento_R2_WSE_Q_15_min <-  Sacramento_R2_long %>% group_by(Date = time, ID) %>%
-   summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
+   summarize(WSE = mean(WSE)+30.9942, Q = mean(Q))%>% spread(value = WSE, key = ID)
 
 Sacramento_R3_WSE_Q_15_min <-  Sacramento_R3_long %>% group_by(Date = time, ID) %>%
-   summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
+   summarize(WSE = mean(WSE)+30.9942, Q = mean(Q))%>% spread(value = WSE, key = ID)
 
 saveRDS(Sacramento_R1_WSE_Q_daily, "../input/TOWNS/WSE/Sacramento_R1_WSE_Q_daily.rds")
 saveRDS(Sacramento_R1_WSE_Q_hourly, "../input/TOWNS/WSE/Sacramento_R1_WSE_Q_hourly.rds")
