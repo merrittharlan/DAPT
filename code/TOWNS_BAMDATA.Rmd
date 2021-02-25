@@ -202,7 +202,7 @@ Tanana_width_daily <- t(calc_width(h = Tanana_WSE_daily[,c(3:ncol(Tanana_WSE_dai
 Tanana_dA_daily <- calcdA_mat(w = Tanana_width_daily, h = t(Tanana_WSE_daily[,c(3:ncol(Tanana_WSE_daily))]))
 Tanana_slope_daily <- calcslope(xvec, hmat = t(Tanana_WSE_daily[,c(3:ncol(Tanana_WSE_daily))]))
 Tanana_slope_daily <- na.replace(Tanana_slope_daily, mean(Tanana_slope_daily))
-
+Tanana_slope_daily[1,] <- colMeans(Tanana_slope_daily, na.rm = TRUE)
 
 Tanana_WSE_6_hrs <- readRDS("../input/TOWNS/WSE/Tanana_WSE_Q_6_hrs.rds")
 Tanana_width_6_hrs <- t(calc_width(h = Tanana_WSE_6_hrs[,c(3:ncol(Tanana_WSE_6_hrs))], elev_prof = Tanana_elev_prof, 
@@ -212,6 +212,7 @@ Tanana_width_6_hrs <- t(calc_width(h = Tanana_WSE_6_hrs[,c(3:ncol(Tanana_WSE_6_h
 Tanana_dA_6_hrs <- calcdA_mat(w = Tanana_width_6_hrs, h = t(Tanana_WSE_6_hrs[,c(3:ncol(Tanana_WSE_6_hrs))]))
 Tanana_slope_6_hrs <- calcslope(xvec, hmat = t(Tanana_WSE_6_hrs[,c(3:ncol(Tanana_WSE_6_hrs))]))
 Tanana_slope_6_hrs <- na.replace(Tanana_slope_6_hrs, mean(Tanana_slope_6_hrs))
+Tanana_slope_6_hrs[1,] <- colMeans(Tanana_slope_6_hrs, na.rm = TRUE)
 
 Tanana_WSE_hourly <- readRDS("../input/TOWNS/WSE/Tanana_WSE_Q_hourly.rds")
 Tanana_width_hourly <- t(calc_width(h = Tanana_WSE_hourly[,c(3:ncol(Tanana_WSE_hourly))], elev_prof = Tanana_elev_prof, 
@@ -221,6 +222,7 @@ Tanana_width_hourly <- t(calc_width(h = Tanana_WSE_hourly[,c(3:ncol(Tanana_WSE_h
 Tanana_dA_hourly <- calcdA_mat(w = Tanana_width_hourly, h = t(Tanana_WSE_hourly[,c(3:ncol(Tanana_WSE_hourly))]))
 Tanana_slope_hourly <- calcslope(xvec, hmat = t(Tanana_WSE_hourly[,c(3:ncol(Tanana_WSE_hourly))]))
 Tanana_slope_hourly <- na.replace(Tanana_slope_hourly, mean(Tanana_slope_hourly))
+Tanana_slope_hourly[1,] <- colMeans(Tanana_slope_hourly, na.rm = TRUE)
 
 Tanana_WSE_15_min <- readRDS("../input/TOWNS/WSE/Tanana_WSE_Q_15_min.rds")
 Tanana_width_15_min <- t(calc_width(h = Tanana_WSE_15_min[,c(3:ncol(Tanana_WSE_15_min))], elev_prof = Tanana_elev_prof, 
@@ -230,7 +232,7 @@ Tanana_width_15_min <- t(calc_width(h = Tanana_WSE_15_min[,c(3:ncol(Tanana_WSE_1
 Tanana_dA_15_min <- calcdA_mat(w = Tanana_width_15_min, h = t(Tanana_WSE_15_min[,c(3:ncol(Tanana_WSE_15_min))]))
 Tanana_slope_15_min <- calcslope(xvec, hmat = t(Tanana_WSE_15_min[,c(3:ncol(Tanana_WSE_15_min))]))
 Tanana_slope_15_min <- na.replace(Tanana_slope_15_min, mean(Tanana_slope_15_min))
-
+Tanana_slope_15_min[1,] <- colMeans(Tanana_slope_15_min, na.rm = TRUE)
 
 ```
 
@@ -330,7 +332,7 @@ Olentangy_width_daily <- t(calc_width(h = Olentangy_WSE_daily[,c(3:ncol(Olentang
 Olentangy_dA_daily <- calcdA_mat(w = Olentangy_width_daily, h = t(Olentangy_WSE_daily[,c(3:ncol(Olentangy_WSE_daily))]))
 Olentangy_slope_daily <- calcslope(xvec, hmat = t(Olentangy_WSE_daily[,c(3:ncol(Olentangy_WSE_daily))]))
 Olentangy_slope_daily <- na.replace(Olentangy_slope_daily, mean(Olentangy_slope_daily))
-
+Olentangy_slope_daily[1,] <- colMeans(Olentangy_slope_daily, na.rm = TRUE)
 
 Olentangy_WSE_6_hrs <- readRDS("../input/TOWNS/WSE/Olentangy_WSE_Q_6_hrs.rds")
 Olentangy_width_6_hrs <- t(calc_width(h = Olentangy_WSE_6_hrs[,c(3:ncol(Olentangy_WSE_6_hrs))], elev_prof = Olentangy_elev_prof, 
@@ -340,6 +342,7 @@ Olentangy_width_6_hrs <- t(calc_width(h = Olentangy_WSE_6_hrs[,c(3:ncol(Olentang
 Olentangy_dA_6_hrs <- calcdA_mat(w = Olentangy_width_6_hrs, h = t(Olentangy_WSE_6_hrs[,c(3:ncol(Olentangy_WSE_6_hrs))]))
 Olentangy_slope_6_hrs <- calcslope(xvec, hmat = t(Olentangy_WSE_6_hrs[,c(3:ncol(Olentangy_WSE_6_hrs))]))
 Olentangy_slope_6_hrs <- na.replace(Olentangy_slope_6_hrs, mean(Olentangy_slope_6_hrs))
+Olentangy_slope_6_hrs[1,] <- colMeans(Olentangy_slope_6_hrs, na.rm = TRUE)
 
 Olentangy_WSE_hourly <- readRDS("../input/TOWNS/WSE/Olentangy_WSE_Q_hourly.rds")
 Olentangy_width_hourly <- t(calc_width(h = Olentangy_WSE_hourly[,c(3:ncol(Olentangy_WSE_hourly))], elev_prof = Olentangy_elev_prof, 
@@ -349,6 +352,7 @@ Olentangy_width_hourly <- t(calc_width(h = Olentangy_WSE_hourly[,c(3:ncol(Olenta
 Olentangy_dA_hourly <- calcdA_mat(w = Olentangy_width_hourly, h = t(Olentangy_WSE_hourly[,c(3:ncol(Olentangy_WSE_hourly))]))
 Olentangy_slope_hourly <- calcslope(xvec, hmat = t(Olentangy_WSE_hourly[,c(3:ncol(Olentangy_WSE_hourly))]))
 Olentangy_slope_hourly <- na.replace(Olentangy_slope_hourly, mean(Olentangy_slope_hourly))
+Olentangy_slope_hourly[1,] <- colMeans(Olentangy_slope_hourly, na.rm = TRUE)
 
 Olentangy_WSE_15_min <- readRDS("../input/TOWNS/WSE/Olentangy_WSE_Q_15_min.rds")
 Olentangy_width_15_min <- t(calc_width(h = Olentangy_WSE_15_min[,c(3:ncol(Olentangy_WSE_15_min))], elev_prof = Olentangy_elev_prof, 
@@ -358,6 +362,7 @@ Olentangy_width_15_min <- t(calc_width(h = Olentangy_WSE_15_min[,c(3:ncol(Olenta
 Olentangy_dA_15_min <- calcdA_mat(w = Olentangy_width_15_min, h = t(Olentangy_WSE_15_min[,c(3:ncol(Olentangy_WSE_15_min))]))
 Olentangy_slope_15_min <- calcslope(xvec, hmat = t(Olentangy_WSE_15_min[,c(3:ncol(Olentangy_WSE_15_min))]))
 Olentangy_slope_15_min <- na.replace(Olentangy_slope_15_min, mean(Olentangy_slope_15_min))
+Olentangy_slope_15_min[1,] <- colMeans(Olentangy_slope_15_min, na.rm = TRUE)
 
 
 ```
@@ -381,6 +386,136 @@ saveRDS(Olentangy_bam_daily, "../input/TOWNS/BAMdata/Olentangy_bam_daily.rds")
 saveRDS(Olentangy_bam_6_hrs, "../input/TOWNS/BAMdata/Olentangy_bam_6_hrs.rds")
 saveRDS(Olentangy_bam_hourly, "../input/TOWNS/BAMdata/Olentangy_bam_hourly.rds")
 saveRDS(Olentangy_bam_15_min, "../input/TOWNS/BAMdata/Olentangy_bam_15_min.rds")
+
+```
+
+## Willamette
+#### Load centerline data and pressure transducer locations
+```{r Willamette spatial, message=FALSE, warning=FALSE}
+library(sf)
+library(raster)
+
+wd = getwd()
+setwd("../input/TOWNS/Centerline/")
+Willamette_cl <- shapefile("Olen_cl_UTM.shp")
+setwd(wd)
+Willamette_PT_coords <- read.csv("../input/TOWNS/PT_coords/Olen_PT_coords.csv")
+
+```
+#### Get elevation data and DEM
+
+```{r Willamette DEM, message=FALSE, warning=FALSE}
+library(doParallel)
+Willamette_WSE_daily <- readRDS("../input/TOWNS/WSE/Willamette_WSE_Q_daily.rds")
+Willamette_DEM <- raster("../input/TOWNS/DEM/Willamette_DEM.tif")
+
+Willamette_orthos <- ortho_lines(Willamette_DEM, data.frame(Willamette_cl@lines[[1]]@Lines[[1]]@coords), 100)
+
+#Find closest orthos to pressure transducers
+Willamette_PT_coords_sp <-SpatialPoints(Willamette_PT_coords[,3:4], proj4string = crs(Willamette_DEM))
+Willamette_dist_mat <- pointDistance(Willamette_PT_coords_sp, data.frame(Willamette_cl@lines[[1]]@Lines[[1]]@coords))
+Willamette_closest_ortho <- Willamette_orthos[apply(Willamette_dist_mat, 1, FUN = which.min)]
+
+plot(Willamette_PT_coords_sp)
+for(i in 1:length(Willamette_closest_ortho)){
+  plot(Willamette_closest_ortho[[i]], add = TRUE, col = "blue")
+}
+#copy cross section profile code at specific location
+
+numcores <- detectCores()
+cl<-makeCluster(numcores-1)
+registerDoParallel(cl)
+ptm<-proc.time()
+Willamette_elev_prof <- foreach(i=1:length(Willamette_closest_ortho), 
+                                  .combine='rbind', .packages=c('raster')) %dopar% {
+                                    extract(Willamette_DEM, Willamette_closest_ortho[[i]], method = 'simple')
+                                  }
+proc.time()-ptm
+stopCluster(cl)
+
+Willamette_scale_x <- vector()
+for(i in 1:length(Willamette_elev_prof)){
+  Willamette_scale_x[i] = 200/length(Willamette_elev_prof[[i]])
+}
+
+plot_elev_prof(Willamette_elev_prof, Willamette_WSE_daily, "Willamette")
+#locator(n = 4)
+Willamette_upper_l <- c( 8.2,  8.1,  3.2,  3.3, 11.5,  4.6, 11.2, 10.3, 11.4,  7.1,  6.5, 11.3,  9.8,  1.4, 12.3,  8.7,  8.2,  8.9,  6.3, 11.5)
+Willamette_lower_l <- c(10.5, 10.2,  5.2,  5.3, 13.2,  7.1, 13.3, 12.3, 13.3,  9.8, 10.3, 13.2, 11.3, 13.1, 14.3, 10.6, 10.4, 11.3,  7.9, 13.3)
+Willamette_lower_r <- c(15.7, 18.5, 18.4, 25.6, 21.6, 12.7, 17.7, 18.7, 18.6, 19.5, 16.6, 20.5, 20.7, 15.7, 20.7, 15.8, 16.7, 16.4, 21.8, 20.0)
+Willamette_upper_r <- c(19.4, 21.1, 21.2, 27.5, 23.7, 15.8, 20.8, 23.4, 22.0, 21.6, 20.4, 22.8, 22.5, 18.1, 24.6, 18.0, 20.5, 20, 23.7, 23.1)
+
+```
+
+#### Calculate width, dA, and slope
+
+```{r Willamette width, message=FALSE, warning=FALSE}
+library(gtools)
+
+xvec <- rev(calc_xvec(Willamette_PT_coords_sp, Willamette_cl))
+
+Willamette_WSE_daily <- readRDS("../input/TOWNS/WSE/Willamette_WSE_Q_daily.rds")
+Willamette_width_daily <- t(calc_width(h = Willamette_WSE_daily[,c(3:ncol(Willamette_WSE_daily))], elev_prof = Willamette_elev_prof, 
+                                  upper_l = Willamette_upper_l, lower_l = Willamette_lower_l,
+                                  lower_r = Willamette_lower_r, upper_r = Willamette_upper_r,
+                                  scale_prof = Willamette_scale_x))
+Willamette_dA_daily <- calcdA_mat(w = Willamette_width_daily, h = t(Willamette_WSE_daily[,c(3:ncol(Willamette_WSE_daily))]))
+Willamette_slope_daily <- calcslope(xvec, hmat = t(Willamette_WSE_daily[,c(3:ncol(Willamette_WSE_daily))]))
+Willamette_slope_daily <- na.replace(Willamette_slope_daily, mean(Willamette_slope_daily))
+Willamette_slope_daily[1,] <- colMeans(Willamette_slope_daily, na.rm = TRUE)
+
+Willamette_WSE_6_hrs <- readRDS("../input/TOWNS/WSE/Willamette_WSE_Q_6_hrs.rds")
+Willamette_width_6_hrs <- t(calc_width(h = Willamette_WSE_6_hrs[,c(3:ncol(Willamette_WSE_6_hrs))], elev_prof = Willamette_elev_prof, 
+                                  upper_l = Willamette_upper_l, lower_l = Willamette_lower_l,
+                                  lower_r = Willamette_lower_r, upper_r = Willamette_upper_r,
+                                  scale_prof = Willamette_scale_x))
+Willamette_dA_6_hrs <- calcdA_mat(w = Willamette_width_6_hrs, h = t(Willamette_WSE_6_hrs[,c(3:ncol(Willamette_WSE_6_hrs))]))
+Willamette_slope_6_hrs <- calcslope(xvec, hmat = t(Willamette_WSE_6_hrs[,c(3:ncol(Willamette_WSE_6_hrs))]))
+Willamette_slope_6_hrs <- na.replace(Willamette_slope_6_hrs, mean(Willamette_slope_6_hrs))
+Willamette_slope_6_hrs[1,] <- colMeans(Willamette_slope_6_hrs, na.rm = TRUE)
+
+Willamette_WSE_hourly <- readRDS("../input/TOWNS/WSE/Willamette_WSE_Q_hourly.rds")
+Willamette_width_hourly <- t(calc_width(h = Willamette_WSE_hourly[,c(3:ncol(Willamette_WSE_hourly))], elev_prof = Willamette_elev_prof, 
+                                  upper_l = Willamette_upper_l, lower_l = Willamette_lower_l,
+                                  lower_r = Willamette_lower_r, upper_r = Willamette_upper_r,
+                                  scale_prof = Willamette_scale_x))
+Willamette_dA_hourly <- calcdA_mat(w = Willamette_width_hourly, h = t(Willamette_WSE_hourly[,c(3:ncol(Willamette_WSE_hourly))]))
+Willamette_slope_hourly <- calcslope(xvec, hmat = t(Willamette_WSE_hourly[,c(3:ncol(Willamette_WSE_hourly))]))
+Willamette_slope_hourly <- na.replace(Willamette_slope_hourly, mean(Willamette_slope_hourly))
+Willamette_slope_hourly[1,] <- colMeans(Willamette_slope_hourly, na.rm = TRUE)
+
+Willamette_WSE_15_min <- readRDS("../input/TOWNS/WSE/Willamette_WSE_Q_15_min.rds")
+Willamette_width_15_min <- t(calc_width(h = Willamette_WSE_15_min[,c(3:ncol(Willamette_WSE_15_min))], elev_prof = Willamette_elev_prof, 
+                                  upper_l = Willamette_upper_l, lower_l = Willamette_lower_l,
+                                  lower_r = Willamette_lower_r, upper_r = Willamette_upper_r,
+                                  scale_prof = Willamette_scale_x))
+Willamette_dA_15_min <- calcdA_mat(w = Willamette_width_15_min, h = t(Willamette_WSE_15_min[,c(3:ncol(Willamette_WSE_15_min))]))
+Willamette_slope_15_min <- calcslope(xvec, hmat = t(Willamette_WSE_15_min[,c(3:ncol(Willamette_WSE_15_min))]))
+Willamette_slope_15_min <- na.replace(Willamette_slope_15_min, mean(Willamette_slope_15_min))
+Willamette_slope_15_min[1,] <- colMeans(Willamette_slope_15_min, na.rm = TRUE)
+
+
+```
+
+
+
+
+
+#### format and save bamdata
+```{r Willamette width, message=FALSE, warning=FALSE}
+library(bamr)
+Willamette_bam_daily = bam_data(w = Willamette_width_daily, s = Willamette_slope_daily, dA = Willamette_slope_daily, Qhat = as.numeric(unlist(Willamette_WSE_daily[,2])))
+
+Willamette_bam_6_hrs = bam_data(w = Willamette_width_6_hrs, s = Willamette_slope_6_hrs, dA = Willamette_slope_6_hrs, Qhat = as.numeric(unlist(Willamette_WSE_6_hrs[,2])))
+
+Willamette_bam_hourly = bam_data(w = Willamette_width_hourly, s = Willamette_slope_hourly, dA = Willamette_slope_hourly, Qhat = as.numeric(unlist(Willamette_WSE_hourly[,2])))
+
+Willamette_bam_15_min = bam_data(w = Willamette_width_15_min, s = Willamette_slope_15_min, dA = Willamette_slope_15_min, Qhat = as.numeric(unlist(Willamette_WSE_15_min[,2])))
+
+saveRDS(Willamette_bam_daily, "../input/TOWNS/BAMdata/Willamette_bam_daily.rds")
+saveRDS(Willamette_bam_6_hrs, "../input/TOWNS/BAMdata/Willamette_bam_6_hrs.rds")
+saveRDS(Willamette_bam_hourly, "../input/TOWNS/BAMdata/Willamette_bam_hourly.rds")
+saveRDS(Willamette_bam_15_min, "../input/TOWNS/BAMdata/Willamette_bam_15_min.rds")
 
 ```
 
