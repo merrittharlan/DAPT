@@ -3,8 +3,7 @@ title: "TOWNS_BAMDATA"
 author: "Merritt Harlan"
 date: "12/6/2020"
 output: html_document
-
-Used with R version 3.6.1
+R version: 3.6.1
 ---
 
 ```{r setup, include=FALSE}
@@ -241,7 +240,7 @@ Tanana_slope_15_min[1,] <- colMeans(Tanana_slope_15_min, na.rm = TRUE)
 
 
 #### format and save bamdata
-```{r Tanana width, message=FALSE, warning=FALSE}
+```{r Tanana save, message=FALSE, warning=FALSE}
 library(bamr)
 Tanana_bam_daily = bam_data(w = Tanana_width_daily, s = Tanana_slope_daily, dA = Tanana_slope_daily, Qhat = as.numeric(unlist(Tanana_WSE_daily[,2])))
 
@@ -372,7 +371,7 @@ Olentangy_slope_15_min[1,] <- colMeans(Olentangy_slope_15_min, na.rm = TRUE)
 
 
 #### format and save bamdata
-```{r Olentangy width, message=FALSE, warning=FALSE}
+```{r Olentangy save, message=FALSE, warning=FALSE}
 library(bamr)
 Olentangy_bam_daily = bam_data(w = Olentangy_width_daily, s = Olentangy_slope_daily, dA = Olentangy_slope_daily, Qhat = as.numeric(unlist(Olentangy_WSE_daily[,2])))
 
@@ -502,7 +501,7 @@ Willamette_slope_15_min[1,] <- colMeans(Willamette_slope_15_min, na.rm = TRUE)
 
 
 #### format and save bamdata
-```{r Willamette width, message=FALSE, warning=FALSE}
+```{r Willamette save, message=FALSE, warning=FALSE}
 library(bamr)
 Willamette_bam_daily = bam_data(w = Willamette_width_daily, s = Willamette_slope_daily, dA = Willamette_slope_daily, Qhat = as.numeric(unlist(Willamette_WSE_daily[,2])))
 
@@ -532,7 +531,7 @@ North_Sask_cl <- shapefile("North_Sask_cl_UTM.shp")
 setwd(wd)
 North_Sask_PT_coords <- read.csv("../input/TOWNS/PT_coords/North_Sask_PT_coords.csv")
 North_Sask_PT_coords_sp <-SpatialPoints(North_Sask_PT_coords[,4:3], proj4string =CRS("+init=epsg:4326"))
-North_Sask_PT_coords_sp <- spTransform(North_Sask_PT_coords_sp, crs(North_Sask_DEM))
+
 
 ```
 #### Get elevation data and DEM
@@ -542,6 +541,7 @@ library(doParallel)
 North_Sask_WSE_daily <- readRDS("../input/TOWNS/WSE/North_Sask_WSE_Q_daily.rds")
 North_Sask_DEM <- raster("../input/TOWNS/DEM/North_Sask_DEM.tif")
 
+North_Sask_PT_coords_sp <- spTransform(North_Sask_PT_coords_sp, crs(North_Sask_DEM))
 North_Sask_orthos <- ortho_lines(North_Sask_DEM, data.frame(North_Sask_cl@lines[[1]]@Lines[[1]]@coords), 500)
 
 #Find closest orthos to pressure transducers
@@ -633,7 +633,7 @@ North_Sask_slope_15_min[1,] <- colMeans(North_Sask_slope_15_min, na.rm = TRUE)
 
 
 #### format and save bamdata
-```{r North_Sask width, message=FALSE, warning=FALSE}
+```{r North_Sask save, message=FALSE, warning=FALSE}
 library(bamr)
 North_Sask_bam_daily = bam_data(w = North_Sask_width_daily, s = North_Sask_slope_daily, dA = North_Sask_slope_daily, Qhat = as.numeric(unlist(North_Sask_WSE_daily[,2])))
 
@@ -771,7 +771,7 @@ Sacramento_R1_slope_15_min[1,] <- colMeans(Sacramento_R1_slope_15_min, na.rm = T
 
 
 #### format and save bamdata
-```{r Sacramento_R1 width, message=FALSE, warning=FALSE}
+```{r Sacramento_R1 save, message=FALSE, warning=FALSE}
 library(bamr)
 Sacramento_R1_bam_daily = bam_data(w = Sacramento_R1_width_daily, s = Sacramento_R1_slope_daily, dA = Sacramento_R1_slope_daily, Qhat = as.numeric(unlist(Sacramento_R1_WSE_daily[,2])))
 
@@ -910,7 +910,7 @@ Sacramento_R2_slope_15_min[1,] <- colMeans(Sacramento_R2_slope_15_min, na.rm = T
 
 
 #### format and save bamdata
-```{r Sacramento_R2 width, message=FALSE, warning=FALSE}
+```{r Sacramento_R2 save, message=FALSE, warning=FALSE}
 library(bamr)
 Sacramento_R2_bam_daily = bam_data(w = Sacramento_R2_width_daily, s = Sacramento_R2_slope_daily, dA = Sacramento_R2_slope_daily, Qhat = as.numeric(unlist(Sacramento_R2_WSE_daily[,2])))
 
@@ -1047,7 +1047,7 @@ Sacramento_R3_slope_15_min[1,] <- colMeans(Sacramento_R3_slope_15_min, na.rm = T
 
 
 #### format and save bamdata
-```{r Sacramento_R3 width, message=FALSE, warning=FALSE}
+```{r Sacramento_R3 save, message=FALSE, warning=FALSE}
 library(bamr)
 Sacramento_R3_bam_daily = bam_data(w = Sacramento_R3_width_daily, s = Sacramento_R3_slope_daily, dA = Sacramento_R3_slope_daily, Qhat = as.numeric(unlist(Sacramento_R3_WSE_daily[,2])))
 

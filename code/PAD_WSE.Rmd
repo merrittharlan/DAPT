@@ -9,22 +9,94 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Athabasca
+#### Load raw WSE data
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r Athabasca WSE, message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(DT)
+Athabasca_WSE <- data.frame(read_csv("../input/PAD/Raw/Athabasca/WSE/Athabasca_WSE_PPP_corr.csv", col_names = TRUE))
+Athabasca_WSE$time <- as.POSIXct(paste0(Athabasca_WSE$Date, Athabasca_WSE$Time_min), format = "%m/%d/%Y%H:%M:%S")+10800
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+attr(Athabasca_WSE$time, "tzone") <- "America/Los_Angeles"
+Athabasca_WSE_df <- Athabasca_WSE[,c(16, 4:15)]
+colnames(Athabasca_WSE_df)[c(2:13)] = c(1:12)
 
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
+#### Load discharge data from ADCP
 
-You can also embed plots, for example:
+```{r Athabasca Q, message=FALSE, warning=FALSE}
+library(dataRetrieval)
+siteNumber <- "15515500"
+parameterCd <- "00060"
+convMetric <- 0.0283168466
+Athabasca_USGS_Q <- readNWISuv(site = siteNumber, parameterCd = parameterCd,startDate = as.Date(min(Athabasca_WSE_df$time)), 
+                                      endDate = as.Date(max(Athabasca_WSE_df$time)+86400))
+Athabasca_USGS_Q_df <- data.frame(time = Athabasca_USGS_Q$dateTime, Q = Athabasca_USGS_Q$X_00060_00000*convMetric)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#### Combine both data sets (discharge and WSE)
+```{r Athabasca both, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(zoo)
+
+#turn WSE values of zero to NA, interpolate WSE to get to 15 minute resolution instead of 30 minute resolution.
+Athabasca_trimmed <- Athabasca_WSE_df %>% gather(key = "ID", value = "WSE", -time) %>% 
+  mutate(WSE = na_if(WSE, 0)) %>% spread(value = WSE, key = ID) %>% drop_na()
+
+#filter discharge data to match dates
+Athabasca_long <- Athabasca_USGS_Q_df %>% 
+  filter(time >= min(Athabasca_trimmed$time))%>% 
+  filter(time <=max(Athabasca_trimmed$time))%>%
+  left_join(Athabasca_trimmed) %>% 
+  gather(key = "ID", value = "WSE", -time, - Q) %>% 
+  mutate(WSE = na.approx(WSE))
+  
+Athabasca_long$ID <- as.numeric(Athabasca_long$ID)
+datatable(Athabasca_long %>% spread(value = WSE, key = ID), caption = "Athabasca")
+
+```
+
+#### Plot WSE 
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+
+ggplot(data = Athabasca_long, aes(x = time, y = WSE, color = ID, group = ID))+geom_point()+ggtitle("Athabasca")
+
+```
+
+##### Write and save 15-minute, hourly, 6-hourly, and daily
+
+```{r Athabasca save, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+Athabasca_long %>% group_by(Date = format(time, "%Y-%m-%d"), ID)%>%
+  summarize(WSE = mean(WSE, na.rm = TRUE))
+
+
+Athabasca_WSE_Q_daily <- Athabasca_long %>% group_by(Date = format(time, "%Y-%m-%d"), ID) %>%
+  summarize(WSE = mean(WSE, na.rm = TRUE), Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
+
+Athabasca_WSE_Q_hourly <- Athabasca_long %>% group_by(Date = format(time, "%Y-%m-%d %H"), ID) %>%
+  summarize(WSE = mean(WSE, na.rm = TRUE), Q = mean(Q, na.rm = TRUE))%>% spread(value = WSE, key = ID)
+
+every6hrseq <- seq.POSIXt(min(Athabasca_long$time), max(Athabasca_long$time), by='6 hour')
+
+Athabasca_WSE_Q_6_hrs <-  Athabasca_long %>% group_by(Date = cut(time, breaks=every6hrseq), ID) %>%
+   summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
+
+Athabasca_WSE_Q_15_min <-  Athabasca_long %>% group_by(Date = time, ID) %>%
+   summarize(WSE = mean(WSE), Q = mean(Q))%>% spread(value = WSE, key = ID)
+
+saveRDS(Athabasca_WSE_Q_daily, "../input/PAD/WSE/Athabasca_WSE_Q_daily.rds")
+saveRDS(Athabasca_WSE_Q_hourly, "../input/PAD/WSE/Athabasca_WSE_Q_hourly.rds")
+saveRDS(Athabasca_WSE_Q_6_hrs, "../input/PAD/WSE/Athabasca_WSE_Q_6_hrs.rds")
+saveRDS(Athabasca_WSE_Q_15_min, "../input/PAD/WSE/Athabasca_WSE_Q_15_min.rds")
+
+```
