@@ -1,0 +1,100 @@
+---
+title: "PAD_Discharge"
+author: "Merritt Harlan"
+date: "2/26/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#### This script reads in QA/QC data from the Peace Athabasca Delta ADCP files, selects only those discharge values with quality greater than 1, and saves them to a compiled csv file. 
+
+## 2018 ADCP data
+
+```{r 2018, message=FALSE, warning=FALSE}
+###PAD ADCP
+#2018
+library(dplyr)
+library(raster)
+library(DT)
+
+#load files
+PAD_2018_ADCP_files <- list.files(pattern = ".csv", path = "../input/PAD/Raw/PAD_2018_ADCP/")
+PAD_2018_ADCP <- lapply(paste0("../input/PAD/Raw/PAD_2018_ADCP/", PAD_2018_ADCP_files), read.csv)
+ 
+#Add lat and lon points for three missing files
+PAD_2018_Master_ADCP <- read.csv("../input/PAD/Raw/2018_Master_ADCP.csv")
+PAD_ADCP_20180809 <- PAD_2018_ADCP[[9]]
+coord_20180809 <- spTransform(SpatialPoints(cbind(na.omit(PAD_ADCP_20180809$Latitude), 
+                                                  na.omit(PAD_ADCP_20180809$Longitude)),  
+                          CRS("+init=epsg:32612")),crs("+init=epsg:4326"))
+PAD_2018_ADCP[[9]]$Latitude <- c(coord_20180809@coords[1:4,2], rep(NA, 6), coord_20180809@coords[5:80,2])
+PAD_2018_ADCP[[9]]$Longitude <- c(coord_20180809@coords[1:4,1], rep(NA, 6), coord_20180809@coords[5:80,1])
+
+PAD_ADCP_20180810 <- PAD_2018_ADCP[[10]]
+coord_20180810 <- spTransform(SpatialPoints(cbind(na.omit(PAD_ADCP_20180810$Latitude), 
+                                                  na.omit(PAD_ADCP_20180810$Longitude)),  
+                                            CRS("+init=epsg:32612")),crs("+init=epsg:4326"))
+PAD_2018_ADCP[[10]]$Latitude <- c(coord_20180810@coords[,2], rep(NA, 5))
+PAD_2018_ADCP[[10]]$Longitude <- c(coord_20180810@coords[,1], rep(NA, 5))
+
+PAD_ADCP_20180812 <- PAD_2018_ADCP[[12]]
+coord_20180812 <- spTransform(SpatialPoints(cbind(na.omit(PAD_ADCP_20180812$Latitude), 
+                                                  na.omit(PAD_ADCP_20180812$Longitude)),  
+                                            CRS("+init=epsg:32612")),crs("+init=epsg:4326"))
+PAD_2018_ADCP[[12]]$Latitude[c(1:nrow(coord_20180812@coords))] <- coord_20180812@coords[,2]
+PAD_2018_ADCP[[12]]$Longitude[c(1:nrow(coord_20180812@coords))]<- coord_20180812@coords[,1]
+
+#Combine all ADCP files into one dataframe to clean the data
+PAD_2018_ADCP_trimmed <- lapply(PAD_2018_ADCP, function(x){
+  y = x %>% dplyr::select("Location", "Latitude", "Longitude","Date","Start_time", "Q", 
+                          "Quality", "Width", "Area")
+  y$Start_time = as.character(y$Start_time)
+  return(y)
+})
+PAD_2018_ADCP_df <- do.call(rbind, PAD_2018_ADCP_trimmed)
+new_date <- as.POSIXct(paste0(PAD_2018_ADCP_df$Date, " ", PAD_2018_ADCP_df$Start_time),
+                      format = "%m/%d/%Y %H:%M:%S", tz = "MST")
+
+PAD_2018_ADCP_df$new_date <- new_date
+PAD_2018_ADCP_df_filtered <- PAD_2018_ADCP_df[PAD_2018_ADCP_df$Quality > 1,c(1:3,6:10)]
+PAD_2018_ADCP_df_filtered <- PAD_2018_ADCP_df_filtered[complete.cases(PAD_2018_ADCP_df_filtered),]
+
+#rename rivers and plot
+write.csv(PAD_2018_ADCP_df_filtered, "../input/PAD/Raw/PAD_2018_ADCP.csv")
+
+datatable(PAD_2018_ADCP_df_filtered)
+
+```
+
+## 2019 ADCP data
+
+```{r 2019}
+#2019
+
+#load files
+PAD_2019_ADCP_files <- list.files(pattern = ".csv", path = "../input/PAD/Raw/PAD_2019_ADCP/")
+PAD_2019_ADCP <- lapply(paste0("../input/PAD/Raw/PAD_2019_ADCP/", PAD_2019_ADCP_files), read.csv)
+
+#Combine all ADCP files into one dataframe to clean the data
+PAD_2019_ADCP_trimmed <- lapply(PAD_2019_ADCP, function(x){
+  y = x %>% dplyr::select("Location", "Latitude", "Longitude","Date","Start_time", "Q", "Quality", "Width", "Area")
+  y$Start_time = as.character(y$Start_time)
+  return(y)
+})
+PAD_2019_ADCP_df <- do.call(rbind, PAD_2019_ADCP_trimmed)
+new_date <- as.POSIXct(paste0(PAD_2019_ADCP_df$Date, " ", PAD_2019_ADCP_df$Start_time),
+                      format = "%m/%d/%Y %H:%M:%S", tz = "MST")
+
+PAD_2019_ADCP_df$new_date <- new_date
+PAD_2019_ADCP_df_filtered <- PAD_2019_ADCP_df[PAD_2019_ADCP_df$Quality > 1,c(1:3,6:10)]
+PAD_2019_ADCP_df_filtered <- PAD_2019_ADCP_df_filtered[complete.cases(PAD_2019_ADCP_df_filtered),]
+
+#rename rivers and plot
+write.csv(PAD_2019_ADCP_df_filtered, "../input/PAD/Raw/PAD_2019_ADCP.csv")
+
+datatable(PAD_2019_ADCP_df_filtered)
+
+```
+
