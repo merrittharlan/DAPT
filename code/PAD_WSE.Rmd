@@ -23,10 +23,9 @@ library("lubridate")
 
 #Function to load raw PT data and plot
 load_pt_files <- function(name, wd, PT_start, PT_end, PT_order, type, day_or_month){
-  setwd(wd)
-  pt_files = list.files(pattern = ".csv")
+  pt_files = list.files(pattern = ".csv", path = wd)
   PT_raw = lapply(pt_files,function(i){
-    read.csv(i, header=TRUE, skip=11)
+    read.csv(paste0(wd, "/",i), header=TRUE, skip=11)
   })
   pt_ids <- lapply(pt_files, function(i){
     substr(i, 3, 9)
@@ -89,23 +88,6 @@ load_pt_files <- function(name, wd, PT_start, PT_end, PT_order, type, day_or_mon
       PT_concat = PT_concat[c(1:date_stop),]
     }
     PT_concat = PT_concat[,c(1, PT_order)]
-    par(family = "serif")
-    layout(matrix(1:2,ncol=2), width = c(0.6, 0.2),height = c(1,1))
-    par(mar=c(6.1,4.1,4.1,2.1))
-    colfunc = colorRampPalette(c("darkblue", "cyan"))(ncol(PT_concat)-1)
-    PT_plot = matplot(PT_concat[,c(2:ncol(PT_concat))], type = c("l"), 
-                      col= colfunc, main = paste0(name, " PT Data"),
-                      xlab = "Date", xaxt = "n",
-                      ylab = "PT data raw (m)", cex.lab = 1.5, 
-                      cex.axis = 1.25, cex.main =2, lwd=2)
-    axis(1, at = seq(1,nrow(PT_concat),2000), 
-         labels = as.Date(PT_concat[seq(1,nrow(PT_concat), 2000),1]))
-    
-    par(mar=c(4.1,1,4.1,1))
-    legend_image <- as.raster(rev(matrix(colfunc, ncol=1)))
-    plot(c(0,3),c(-0.05,1),type = 'n', axes = F,xlab = '', ylab = '')
-    text(x=1.75, y = seq(0.05,0.95,l=2), labels = c("Downstream", "Upstream"), cex = 1.15)
-    rasterImage(legend_image, -1, 0, 0.5,1)
   }
   return(PT_concat)
 }
@@ -113,15 +95,6 @@ load_pt_files <- function(name, wd, PT_start, PT_end, PT_order, type, day_or_mon
 #Function to convert barologger to m and plot
 convert_baro <- function(name, baro_concat){
   baro_concat[,c(2:ncol(baro_concat))] = 0.101972 * baro_concat[,c(2:ncol(baro_concat))]
-  par(family = "serif")
-  colfunc = colorRampPalette(c("red", "yellow"))(ncol(baro_concat)-1)
-  baro_plot = matplot(baro_concat[,c(2:ncol(baro_concat))], type = c("l"), 
-                    col= colfunc, main = paste0(name, " Data"),
-                    xlab = "Date", xaxt = "n",
-                    ylab = "Pressure (m)", cex.lab = 1.5, 
-                    cex.axis = 1.25, cex.main =2, lwd=2)
-  axis(1, at = seq(1,nrow(baro_concat),3000), 
-       labels = as.Date(baro_concat[seq(1,nrow(baro_concat), 3000),1]))
   return(baro_concat)
 }
 
@@ -135,34 +108,14 @@ baro_correct <- function(name, wd, PT_concat, riv_file, baro_concat, baro_file){
   PT_concat = PT_concat[PT_concat$new_time >= min(baro_river$new_time, na.rm = TRUE) &
                           PT_concat$new_time <= max(baro_river$new_time, na.rm = TRUE),]
   PT_concat[,c(2:ncol(PT_concat))] = PT_concat[,c(2:ncol(PT_concat))] - baro_river[,2]
-  #plot
-  par(family = "serif")
-  layout(matrix(1:2,ncol=2), width = c(0.6, 0.2),height = c(1,1))
-  par(mar=c(6.1,4.1,4.1,2.1))
-  colfunc = colorRampPalette(c("darkblue", "cyan"))(ncol(PT_concat)-1)
-  PT_plot = matplot(PT_concat[,c(2:ncol(PT_concat))], type = c("l"), 
-                    col= colfunc, main = paste0(name, " Baro-Corrected"),
-                    xlab = "Date", xaxt = "n",
-                    ylab = "Water Depth (m)", cex.lab = 1.5, 
-                    cex.axis = 1.25, cex.main =2, lwd=2)
-  axis(1, at = seq(1,nrow(PT_concat),2000), 
-       labels = as.Date(PT_concat[seq(1,nrow(PT_concat), 2000),1]))
-  
-  par(mar=c(4.1,1,4.1,1))
-  legend_image <- as.raster(rev(matrix(colfunc, ncol=1)))
-  plot(c(0,3),c(-0.05,1),type = 'n', axes = F,xlab = '', ylab = '')
-  text(x=1.75, y = seq(0.05,0.95,l=2), labels = c("Downstream", "Upstream"), cex = 1.15)
-  rasterImage(legend_image, -1, 0, 0.5,1)
-  setwd(wd)
-  write.csv(PT_concat, file = paste0(name, "_WSE_baro_corr.csv"))
+  write.csv(PT_concat, file = paste0(wd, "/", name, "_WSE_baro_corr.csv"))
   return(PT_concat)
 }
 
 #Function to load and plot PPP data with PTs, then save the closest n
 load_ppp <- function(wd, pt_coords, ppp_crs, pt_crs, n_dist, offset_df){
-  setwd(wd)
-  file_names = list.files()
-  PPP_csv = lapply(file_names, read.csv, header=TRUE)
+  file_names = list.files(path = wd)
+  PPP_csv = lapply(paste0(wd,"/", file_names), read.csv, header=TRUE)
   PPP_data = do.call(rbind, PPP_csv)
   PPP_xy = cbind(PPP_data$longitude_decimal_degree, PPP_data$latitude_decimal_degree)
   PPPcoor = SpatialPoints(PPP_xy, proj4string=ppp_crs)
@@ -172,9 +125,6 @@ load_ppp <- function(wd, pt_coords, ppp_crs, pt_crs, n_dist, offset_df){
   PPP_df = data.frame(time = (as.POSIXct(paste0(PPP_data$day_of_year, "-", PPP_data$year), 
                                         format = "%j-%Y", tz = "MST")+60*60*PPP_data$decimal_hour),
                       PPP_UTM, ortho_height = c(PPP_data$ortho_height_m_cgvd2013))
-  #Plot points- but not all PPP points because there are too many
-  plot(PPP_UTM[seq(1, length(PPP_UTM), 1000)], pch = 19)
-  plot(PT_UTM, pch = 17, col = "red", add = TRUE)
   #find closest PPP to PT within n dist
   no_cores = detectCores()-1
   cl = makeCluster(no_cores)
@@ -220,14 +170,9 @@ PPP_correct <- function(name, pt_coords, pt_concat, closest_PPP, year){
         offset = mean(unlist(PPP_offset), na.rm = TRUE)
         offset_times = offset_times[1]
       }
-      plot(x = offset_times, y = offset, pch = 19, xlab = "Time", ylab = "Offset (m)", 
-           main = paste0(name, " ", colnames(pt_concat_PPP_corr)[pt], 
-                         " PPP Offset"))
       PPP_offset[[pt-1]] = offset
       pt_concat_PPP_corr[,pt] = pt_concat_PPP_corr[,pt] + median(offset, na.rm = TRUE)
     }
-    #plot comparative boxplots
-    #plot profile
     if(all(is.na(pt_concat_PPP_corr[1, c(2:ncol(pt_concat_PPP_corr))]))==TRUE){
       date_start = min(which(!is.na(rowMeans(pt_concat_PPP_corr[,c(2:ncol(pt_concat_PPP_corr))], na.rm = TRUE))))
       pt_concat_PPP_corr = pt_concat_PPP_corr[c(date_start:nrow(pt_concat_PPP_corr)),]
@@ -236,22 +181,6 @@ PPP_correct <- function(name, pt_coords, pt_concat, closest_PPP, year){
       date_stop = min(which(is.na(rowMeans(pt_concat_PPP_corr[,c(2:ncol(pt_concat_PPP_corr))], na.rm = TRUE))))
       pt_concat_PPP_corr = pt_concat_PPP_corr[c(1:date_stop),]
     }
-    layout(matrix(1:2,ncol=2), width = c(0.6, 0.2),height = c(1,1))
-    par(mar=c(6.1,4.1,4.1,2.1))
-    colfunc = colorRampPalette(c("darkblue", "cyan"))(ncol(pt_concat_PPP_corr)-1)
-    PT_plot = matplot(pt_concat_PPP_corr[,c(2:ncol(pt_concat_PPP_corr))], type = c("l"), 
-                      col= colfunc, main = paste0(name, " PPP-Corrected"),
-                      xlab = "Date", xaxt = "n",
-                      ylab = "WSE (m)", cex.lab = 1.5, 
-                      cex.axis = 1.25, cex.main =2, lwd=2)
-    axis(1, at = seq(1,nrow(pt_concat_PPP_corr),4000), 
-         labels = as.Date(pt_concat_PPP_corr[seq(1,nrow(pt_concat_PPP_corr), 4000),1]))
-    
-    par(mar=c(4.1,1,4.1,1))
-    legend_image <- as.raster(rev(matrix(colfunc, ncol=1)))
-    plot(c(0,3),c(-0.05,1),type = 'n', axes = F,xlab = '', ylab = '')
-    text(x=1.75, y = seq(0.05,0.95,l=2), labels = c("Downstream", "Upstream"), cex = 1.15)
-    rasterImage(legend_image, -1, 0, 0.5,1)
     
     return(pt_concat_PPP_corr)
   }else{
@@ -260,9 +189,6 @@ PPP_correct <- function(name, pt_coords, pt_concat, closest_PPP, year){
       if(!is.na(PPP)[1]){
         offset = PPP$corr_height - tail(pt_concat_PPP_corr[!is.na(pt_concat_PPP_corr[,pt]),pt], n = 1)
         offset_times = PPP$time
-        plot(x = offset_times, y = offset, pch = 19, xlab = "Time", ylab = "Offset (m)", 
-             main = paste0(name, " ", colnames(pt_concat_PPP_corr)[pt], 
-                           " PPP Offset"))
         pt_concat_PPP_corr[,pt] = pt_concat_PPP_corr[,pt] + median(offset, na.rm = TRUE)
         PPP_offset[[pt-1]] = offset
       }else if(length(unlist(PPP_offset))>0){
@@ -279,68 +205,13 @@ PPP_correct <- function(name, pt_coords, pt_concat, closest_PPP, year){
       date_stop = min(which(is.na(rowMeans(pt_concat_PPP_corr[,c(2:ncol(pt_concat_PPP_corr))], na.rm = TRUE))))
       pt_concat_PPP_corr = pt_concat_PPP_corr[c(1:date_stop),]
     }
-    layout(matrix(1:2,ncol=2), width = c(0.6, 0.2),height = c(1,1))
-    par(mar=c(6.1,4.1,4.1,2.1))
-    colfunc = colorRampPalette(c("darkblue", "cyan"))(ncol(pt_concat_PPP_corr)-1)
-    PT_plot = matplot(pt_concat_PPP_corr[,c(2:ncol(pt_concat_PPP_corr))], type = c("l"), 
-                      col= colfunc, main = paste0(name, " PPP-Corrected"),
-                      xlab = "Date", xaxt = "n",
-                      ylab = "WSE (m)", cex.lab = 1.5, 
-                      cex.axis = 1.25, cex.main =2, lwd=2)
-    axis(1, at = seq(1,nrow(pt_concat_PPP_corr),4000), 
-         labels = as.Date(pt_concat_PPP_corr[seq(1,nrow(pt_concat_PPP_corr), 4000),1]))
-    
-    par(mar=c(4.1,1,4.1,1))
-    legend_image <- as.raster(rev(matrix(colfunc, ncol=1)))
-    plot(c(0,3),c(-0.05,1),type = 'n', axes = F,xlab = '', ylab = '')
-    text(x=1.75, y = seq(0.05,0.95,l=2), labels = c("Downstream", "Upstream"), cex = 1.15)
-    rasterImage(legend_image, -1, 0, 0.5,1)
-    
     return(pt_concat_PPP_corr)
   }
 }
 
-#Function to correct to line
-line_correct <- function(name, pt_coords, cl_coords, pt_concat){
-  riv_len = cumsum(pointDistance(cl_coords[1:(nrow(cl_coords)-1),], 
-                                 cl_coords[2:nrow(cl_coords),], lonlat = FALSE))
-  dist_mat = pointDistance(pt_coords, data.frame(cl_coords), lonlat = FALSE)
-  xvec = riv_len[apply(dist_mat, 1, FUN = which.min)]
-  elev = unlist(colMeans(pt_concat[,c(2:ncol(pt_concat))], na.rm = TRUE))
-  xvec = xvec[c(which(!is.na(elev)))]
-  elev = na.omit(elev)
-  x_dist = (xvec/1000)
-  x_dist = sort(x_dist)
-  fit = lm(elev ~ x_dist)
-  WSE_PPP_slope_corr = pt_concat
-  for(pt in 2:ncol(pt_concat)){
-    closest_line_point = x_dist[pt-1] * fit[1]$coefficients[2]+fit[1]$coefficients[1]
-    WSE_PPP_slope_corr[,pt] = WSE_PPP_slope_corr[,pt] + closest_line_point - 
-      mean(WSE_PPP_slope_corr[,pt], na.rm = TRUE)
-  }
-  layout(matrix(1:2,ncol=2), width = c(0.6, 0.2),height = c(1,1))
-  par(mar=c(6.1,4.1,4.1,2.1))
-  colfunc = colorRampPalette(c("darkblue", "cyan"))(ncol(WSE_PPP_slope_corr)-1)
-  PT_plot = matplot(WSE_PPP_slope_corr[,c(2:ncol(WSE_PPP_slope_corr))], type = c("l"), 
-                    col= colfunc, main = paste0(name, " Slope-Corrected"),
-                    xlab = "Date", xaxt = "n",
-                    ylab = "WSE (m)", cex.lab = 1.5, 
-                    cex.axis = 1.25, cex.main =2, lwd=2)
-  axis(1, at = seq(1,nrow(WSE_PPP_slope_corr),4000), 
-       labels = as.Date(WSE_PPP_slope_corr[seq(1,nrow(WSE_PPP_slope_corr), 4000),1]))
-  
-  par(mar=c(4.1,1,4.1,1))
-  legend_image <- as.raster(rev(matrix(colfunc, ncol=1)))
-  plot(c(0,3),c(-0.05,1),type = 'n', axes = F,xlab = '', ylab = '')
-  text(x=1.75, y = seq(0.05,0.95,l=2), labels = c("Downstream", "Upstream"), cex = 1.15)
-  rasterImage(legend_image, -1, 0, 0.5,1)
-  
-  return(WSE_PPP_slope_corr)
-}
-
 ```
 
-## Athabasca
+## Baro
 
 ```{r baro, message=FALSE, warning=FALSE}
 
@@ -368,12 +239,12 @@ baro_2019_corr <- convert_baro("Baro 2019", baro_2019_concatenated)
 
 
 ```
+##PPP
 
-
-```{r PPP, message=FALSE, warning=FALSE}
+```{r PPP 2018, message=FALSE, warning=FALSE}
 ###Load and correct PPP data-----
 #Load 2018 PPP data
-offset_2018 <- read.csv("../input/PAD/raw/2018_offsets_corr.csv")
+offset_2018 <- read.csv("../input/PAD/Raw/2018_offsets_corr.csv")
 colnames(offset_2018)[1] = "Date"
 offset_2018_df <- data.frame(values = offset_2018$Antenna.rim.to.WSE..DS.on.pole.,
                              date = as.POSIXct(paste0(offset_2018$Date,
@@ -389,8 +260,15 @@ PAD_2018_PPP_50m <- load_ppp(wd = "../input/PAD/raw/PPP_2018",
                              offset_df = offset_2018_df)
 names(PAD_2018_PPP_50m) <- PAD_PT_2018$ID
 
+
+```
+
+
+```{r PPP 2019, message=FALSE, warning=FALSE}
+###Load and correct PPP data-----
+
 #Load 2019 PPP data
-offset_2019 <- read.csv("../input/PAD/raw/2019_offsets_corr.csv")
+offset_2019 <- read.csv("../input/PAD/Raw/2019_offsets_corr.csv")
 colnames(offset_2019)[1] = "Date"
 offset_2019_df <- data.frame(values = offset_2019$Offset..cm.,
                              date = as.POSIXct(paste0(offset_2019$Date,
@@ -400,15 +278,14 @@ offset_2019_df <- offset_2019_df[!is.na(offset_2019_df$values), ]
 
 PAD_PT_2019 <-  PAD_PT[PAD_PT$Year=="2019",]
 PAD_PT_2019 <-  PAD_PT_2019[PAD_PT_2019$River != "Baro_2019",]
-PAD_2019_PPP_50m <- load_ppp(wd = "../input/PAD/raw/PPP_2019",
+PAD_2019_PPP_50m <- load_ppp(wd = "../input/PAD/Raw/PPP_2019",
                              pt_coords = PAD_PT_2019, ppp_crs = crs("+init=epsg:4617"),
                              pt_crs = crs("+proj=utm +north +zone=12 + ellps=WGS84"),n_dist = 100,
                              offset_df = offset_2019_df)
 names(PAD_2019_PPP_50m) <- PAD_PT_2019$ID
 
 ```
-
-
+## 2018
 ```{r}
 ##2018------
 #Athabasca-----
@@ -426,29 +303,29 @@ Athabasca_PT_corr <- Athabasca_concatenated[,c(1,3:7)]
 Athabasca_PT_corr[8000:nrow(Athabasca_PT_corr), 6]<- NA
 
 
-Athabasca_baro_corr <- baro_correct("Athabasca", paste0(home_dir, "/PAD_2018_PT/Athabasca/WSE"),
+Athabasca_baro_corr <- baro_correct("Athabasca", "../input/PAD/raw/Athabasca/WSE",
                                     Athabasca_PT_corr, Athabasca, baro_2018_corr, baro_2018)
-write.csv(Athabasca_PT_corr, file = "Athabasca_PT_data_corr.csv")
+write.csv(Athabasca_PT_corr, file = "../input/PAD/raw/Athabasca/WSE/Athabasca_PT_data_corr.csv")
 
 Athabasca_PPP_corr <- PPP_correct(name = "Athabasca", pt_coords = PAD_PT_2018, 
                                   pt_concat = Athabasca_baro_corr,
                                   closest_PPP = PAD_2018_PPP_50m, year = "2018")
-setwd(paste0(home_dir, "/PAD_2018_PT/Athabasca/WSE"))
-write.csv(Athabasca_PPP_corr, file = "Athabasca_WSE_PPP_corr.csv")
 
-setwd(paste0(home_dir, "/PAD_2018_PT"))
+write.csv(Athabasca_PPP_corr, file = "../input/PAD/raw/Athabasca/WSE/Athabasca_WSE_PPP_corr.csv")
+
 Athabasca <- Athabasca[match(
   colnames(Athabasca_PPP_corr)[2:ncol(Athabasca_PPP_corr)], Athabasca$ID),]
-write.csv(Athabasca, "Athabasca_PT_coords.csv")
+write.csv(Athabasca, "../input/PAD/PT_coords/Athabasca_PT_coords.csv")
+
 #Coupe-----
 Coupe <- PAD_PT[PAD_PT$River == "Coupe",]
 
-Coupe_concatenated <- load_pt_files("Coupe", paste0(home_dir, "/PAD_2018_PT/Coupe"),
+Coupe_concatenated <- load_pt_files("Coupe", "../input/PAD/raw/Coupe",
                                         as.POSIXct(Coupe$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                         as.POSIXct(Coupe$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                         c(2:7), type = "river", day_or_month = "day")
-setwd(paste0(home_dir, "/PAD_2018_PT/Coupe/WSE"))
-write.csv(Coupe_concatenated, file = "Coupe_PT_data_raw.csv")
+
+write.csv(Coupe_concatenated, file = "../input/PAD/raw/Coupe/WSE/Coupe_PT_data_raw.csv")
 
 #manually clean data
 Coupe_PT_corr <- Coupe_concatenated
@@ -456,29 +333,29 @@ Coupe_PT_corr[1:500, 6]<- NA
 Coupe_PT_corr[15500:nrow(Coupe_PT_corr), 6]<-NA
 Coupe_PT_corr[6000:nrow(Coupe_PT_corr), 4] <-NA
 
-Coupe_baro_corr <- baro_correct("Coupe", paste0(home_dir, "/PAD_2018_PT/Coupe/WSE"),
+Coupe_baro_corr <- baro_correct("Coupe", "../input/PAD/raw/Coupe/WSE",
                                     Coupe_PT_corr, Coupe, baro_2018_corr, baro_2018)
-write.csv(Coupe_PT_corr, file = "Coupe_PT_data_cropped.csv")
+write.csv(Coupe_PT_corr, file = "../input/PAD/raw/Coupe/WSE/Coupe_PT_data_cropped.csv")
 Coupe_PPP_corr <- PPP_correct(name = "Coupe", pt_coords = PAD_PT_2018, 
                                   pt_concat = Coupe_baro_corr,
                                   closest_PPP = PAD_2018_PPP_50m,  year = "2018")
-setwd(paste0(home_dir, "/PAD_2018_PT/Coupe/WSE"))
-write.csv(Coupe_PPP_corr, file = "Coupe_WSE_PPP_corr.csv")
 
-setwd(paste0(home_dir, "/PAD_2018_PT"))
+write.csv(Coupe_PPP_corr, file = "../input/PAD/raw/Coupe/WSE/Coupe_WSE_PPP_corr.csv")
+
+
 Coupe <- Coupe[match(
   colnames(Coupe_PPP_corr)[2:ncol(Coupe_PPP_corr)], Coupe$ID),]
-write.csv(Coupe, "Coupe_PT_coords.csv")
+write.csv(Coupe, "../input/PAD/PT_coords/Coupe_PT_coords.csv")
 
 #Fletcher-----
 Fletcher <- PAD_PT[PAD_PT$River == "Fletcher",]
 
-Fletcher_concatenated <- load_pt_files("Fletcher", paste0(home_dir, "/PAD_2018_PT/Fletcher"),
+Fletcher_concatenated <- load_pt_files("Fletcher","../input/PAD/raw/Fletcher",
                                     as.POSIXct(Fletcher$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                     as.POSIXct(Fletcher$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                     c(7:2), type = "river", day_or_month = "day")
-setwd(paste0(home_dir, "/PAD_2018_PT/Fletcher/WSE"))
-write.csv(Fletcher_concatenated, file = "Fletcher_PT_data_raw.csv")
+
+write.csv(Fletcher_concatenated, file = "../input/PAD/raw/Fletcher/WSE/Fletcher_PT_data_raw.csv")
 
 #manually clean data
 Fletcher_PT_corr <- Fletcher_concatenated[,c(1:6)]
@@ -486,34 +363,30 @@ Fletcher_PT_corr[10800:10900, 3] <- NA
 Fletcher_PT_corr[0:1000, 4] <- NA
 Fletcher_PT_corr[16000:nrow(Fletcher_PT_corr), 3] <- NA
 
-Fletcher_baro_corr <- baro_correct("Fletcher", paste0(home_dir, "/PAD_2018_PT/Fletcher/WSE"),
+Fletcher_baro_corr <- baro_correct("Fletcher", "../input/PAD/raw/Fletcher/WSE",
                                 Fletcher_PT_corr, Fletcher, baro_2018_corr, baro_2018)
-write.csv(Fletcher_PT_corr, file = "Fletcher_PT_data_cropped.csv")
+write.csv(Fletcher_PT_corr, file = "../input/PAD/raw/Fletcher/WSE/Fletcher_PT_data_cropped.csv")
 Fletcher_PPP_corr <- PPP_correct(name = "Fletcher", pt_coords = PAD_PT_2018, 
                                   pt_concat = Fletcher_baro_corr,
                                   closest_PPP = PAD_2018_PPP_50m,  year = "2018")
-setwd(paste0(home_dir, "/PAD_2018_PT/Fletcher/WSE"))
-write.csv(Fletcher_PPP_corr, file = "Fletcher_WSE_PPP_corr.csv")
 
-setwd("C:/Users/Merritt/Desktop/Research/PT_Paper/PAD_2018/Fletcher")
-Fletcher_cl <- readOGR(dsn = ".", layer = "Fletcher_CL_UTM")
-Fletcher_cl_coords <- Fletcher_cl@lines[[1]]@Lines[[1]]@coords
-Fletcher_line_corr <- line_correct(name = "Fletcher", pt_coords = Fletcher[1:5,3:4], 
-                                   cl_coords = Fletcher_cl_coords, pt_concat = Fletcher_PPP_corr)
+write.csv(Fletcher_PPP_corr, file = "../input/PAD/raw/Fletcher/WSE/Fletcher_WSE_PPP_corr.csv")
 
-setwd(paste0(home_dir, "/PAD_2018_PT"))
+
 Fletcher <- Fletcher[match(
   colnames(Fletcher_PPP_corr)[2:ncol(Fletcher_PPP_corr)], Fletcher$ID),]
-write.csv(Fletcher, "Fletcher_PT_coords.csv")
+write.csv(Fletcher, "../input/PAD/PT_coords/Fletcher_PT_coords.csv")
+
 #Mamawi-----
 Mamawi <- PAD_PT[PAD_PT$River == "Mamawi",]
 
-Mamawi_concatenated <- load_pt_files("Mamawi", paste0(home_dir, "/PAD_2018_PT/Mamawi"),
+Mamawi_concatenated <- load_pt_files("Mamawi", "../input/PAD/raw/Mamawi",
                                        as.POSIXct(Mamawi$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                        as.POSIXct(Mamawi$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                        c(7:2), type = "river", day_or_month = "day")
-setwd(paste0(home_dir, "/PAD_2018_PT/Mamawi/WSE"))
-write.csv(Mamawi_concatenated, file = "Mamawi_PT_data_raw.csv")
+
+write.csv(Mamawi_concatenated, file = "../input/PAD/raw/Mamawi/WSE/Mamawi_PT_data_raw.csv")
+
 #manually clean data
 Mamawi_PT_corr <- Mamawi_concatenated
 Mamawi_PT_corr[6000:nrow(Mamawi_PT_corr), 2] <- NA
@@ -521,39 +394,30 @@ Mamawi_PT_corr[0:560, 3] <- NA
 Mamawi_PT_corr[0:2650, 6] <- NA
 Mamawi_PT_corr[0:570, 7] <- NA
 
-Mamawi_baro_corr <- baro_correct("Mamawi", paste0(home_dir, "/PAD_2018_PT/Mamawi/WSE"),
+Mamawi_baro_corr <- baro_correct("Mamawi", "../input/PAD/raw/Mamawi/WSE",
                                    Mamawi_PT_corr, Mamawi, baro_2018_corr, baro_2018)
 
-write.csv(Mamawi_PT_corr, file = "Mamawi_PT_data_cropped.csv")
+write.csv(Mamawi_PT_corr, file = "../input/PAD/raw/Mamawi/WSE/Mamawi_PT_data_cropped.csv")
 Mamawi_PPP_corr <- PPP_correct(name = "Mamawi", pt_coords = PAD_PT_2018, 
                                   pt_concat = Mamawi_baro_corr,
                                   closest_PPP = PAD_2018_PPP_50m, year = "2018")
-setwd(paste0(home_dir, "/PAD_2018_PT/Mamawi/WSE"))
-write.csv(Mamawi_PPP_corr, file = "Mamawi_WSE_PPP_corr.csv")
 
-setwd("C:/Users/Merritt/Desktop/Research/PT_Paper/PAD_2018/Mamawi")
-Mamawi_cl <- readOGR(dsn = ".", layer = "Mamawi_CL_UTM")
-Mamawi_cl_coords <- Mamawi_cl@lines[[1]]@Lines[[1]]@coords
-Mamawi_line_corr <- line_correct(name = "Mamawi", pt_coords = Mamawi[match(
-  colnames(Mamawi_PPP_corr)[2:ncol(Mamawi_PPP_corr)], Mamawi$ID),3:4], 
-                                   cl_coords = Mamawi_cl_coords, pt_concat = Mamawi_PPP_corr)
-setwd(paste0(home_dir, "/PAD_2018_PT/Mamawi/WSE"))
-write.csv(Mamawi_line_corr, file = "Mamawi_WSE_slope_corr.csv")
+write.csv(Mamawi_PPP_corr, file = "../input/PAD/raw/Mamawi/WSE/Mamawi_WSE_PPP_corr.csv")
 
-setwd(paste0(home_dir, "/PAD_2018_PT"))
 Mamawi <- Mamawi[match(
   colnames(Mamawi_PPP_corr)[2:ncol(Mamawi_PPP_corr)], Mamawi$ID),]
-write.csv(Mamawi, "Mamawi_PT_coords.csv")
+write.csv(Mamawi, "../input/PAD/PT_coords/Mamawi_PT_coords.csv")
 
 #Peace-----
 Peace <- PAD_PT[PAD_PT$River == "Peace",]
 
-Peace_concatenated <- load_pt_files("Peace", paste0(home_dir, "/PAD_2018_PT/Peace"),
+Peace_concatenated <- load_pt_files("Peace", "../input/PAD/raw/Peace",
                                      as.POSIXct(Peace$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                      as.POSIXct(Peace$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                      c(6:2), type = "river", day_or_month = "day")
-setwd(paste0(home_dir, "/PAD_2018_PT/Peace/WSE"))
-write.csv(Peace_concatenated, file = "Peace_PT_data_raw.csv")
+
+write.csv(Peace_concatenated, file = "../input/PAD/raw/Peace/WSE/Peace_PT_data_raw.csv")
+
 #manually clean data
 Peace_PT_corr <- Peace_concatenated
 Peace_PT_corr[15300:nrow(Peace_PT_corr), 2] <- NA
@@ -564,30 +428,34 @@ Peace_PT_corr[7100:10400, 4] <- NA
 Peace_PT_corr[6300:nrow(Peace_PT_corr), 3] <- NA
 Peace_PT_corr[6300:10300, 2] <- NA
 
-Peace_baro_corr <- baro_correct("Peace", paste0(home_dir, "/PAD_2018_PT/Peace/WSE"),
+Peace_baro_corr <- baro_correct("Peace", "../input/PAD/raw/Peace/WSE",
                                  Peace_PT_corr, Peace, baro_2018_corr, baro_2018)
-write.csv(Peace_PT_corr, file = "Peace_PT_data_cropped.csv")
+
+write.csv(Peace_PT_corr, file = "../input/PAD/raw/Peace/WSE/Peace_PT_data_cropped.csv")
+
 Peace_PPP_corr <- PPP_correct(name = "Peace", pt_coords = PAD_PT_2018, 
                                   pt_concat = Peace_baro_corr,
                                   closest_PPP = PAD_2018_PPP_50m, year = "2018")
-setwd(paste0(home_dir, "/PAD_2018_PT/Peace/WSE"))
-write.csv(Peace_PPP_corr, file = "Peace_WSE_PPP_corr.csv")
 
-setwd(paste0(home_dir, "/PAD_2018_PT"))
+write.csv(Peace_PPP_corr, file = "../input/PAD/raw/Peace/WSE/Peace_WSE_PPP_corr.csv")
+
+
 Peace <- Peace[match(
   colnames(Peace_PPP_corr)[2:ncol(Peace_PPP_corr)], Peace$ID),]
-write.csv(Peace, "Peace_PT_coords.csv")
+
+write.csv(Peace, "../input/PAD/PT_coords/Peace_PT_coords.csv")
 
 
 #QF-----
 QF <- PAD_PT[PAD_PT$River == "QF",]
 
-QF_concatenated <- load_pt_files("QF", paste0(home_dir, "/PAD_2018_PT/QF"),
+QF_concatenated <- load_pt_files("QF", "../input/PAD/raw/QF",
                                     as.POSIXct(QF$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                     as.POSIXct(QF$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                     c(8:2), type = "river", day_or_month = "day")
-setwd(paste0(home_dir, "/PAD_2018_PT/QF/WSE"))
-write.csv(QF_concatenated, file = "QF_PT_data_raw.csv")
+
+write.csv(QF_concatenated, file = "../input/PAD/raw/QF/WSE/QF_PT_data_raw.csv")
+
 #manually clean data
 QF_PT_corr <- QF_concatenated
 QF_PT_corr[c(7100:10200, 14000:nrow(QF_PT_corr)), 2] <- NA
@@ -597,47 +465,52 @@ QF_PT_corr[0:600, 7] <- NA
 QF_PT_corr[which(QF_concatenated[,8]>11),8] <- NA
 QF_PT_corr[c(0:650, 12500:15697),8] <- NA
 
-QF_baro_corr <- baro_correct("QF", paste0(home_dir, "/PAD_2018_PT/QF/WSE"),
+QF_baro_corr <- baro_correct("QF", "../input/PAD/raw/QF/WSE",
                                 QF_PT_corr, QF, baro_2018_corr, baro_2018)
-write.csv(QF_PT_corr, file = "QF_PT_data_cropped.csv")
+
+write.csv(QF_PT_corr, file = "../input/PAD/raw/QF/WSE/QF_PT_data_cropped.csv")
+
 QF_PPP_corr <- PPP_correct(name = "QF", pt_coords = PAD_PT_2018, 
                                   pt_concat = QF_baro_corr,
                                   closest_PPP = PAD_2018_PPP_50m,  year = "2018")
-setwd(paste0(home_dir, "/PAD_2018_PT/QF/WSE"))
-write.csv(QF_PPP_corr, file = "QF_WSE_PPP_corr.csv")
 
-setwd(paste0(home_dir, "/PAD_2018_PT"))
+write.csv(QF_PPP_corr, file = "../input/PAD/raw/QF/WSE/QF_WSE_PPP_corr.csv")
+
 QF <- QF[match(
   colnames(QF_PPP_corr)[2:ncol(QF_PPP_corr)], QF$ID),]
-write.csv(QF, "QF_PT_coords.csv")
+write.csv(QF, "../input/PAD/PT_coords/QF_PT_coords.csv")
 
 #Rochers-----
 Rochers <- PAD_PT[PAD_PT$River == "Rochers",]
 
-Rochers_concatenated <- load_pt_files("Rochers", paste0(home_dir, "/PAD_2018_PT/Rochers"),
+Rochers_concatenated <- load_pt_files("Rochers", "../input/PAD/raw/Rochers",
                                  as.POSIXct(Rochers$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                  as.POSIXct(Rochers$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                  c(8:2), type = "river", day_or_month = "day")
-setwd(paste0(home_dir, "/PAD_2018_PT/Rochers/WSE"))
-write.csv(Rochers_concatenated, file = "Rochers_PT_data_raw.csv")
+
+write.csv(Rochers_concatenated, file = "../input/PAD/raw/Rochers/WSE/Rochers_PT_data_raw.csv")
+
 #manually clean data
 Rochers_PT_corr <- Rochers_concatenated[,c(1:4, 6:8)]
 Rochers_PT_corr[c(5500:nrow(Rochers_PT_corr)), 2] <- NA
 Rochers_PT_corr[c(14600:15400), 3] <- NA
 Rochers_PT_corr[c(14400:nrow(Rochers_PT_corr)), 4] <- NA
-Rochers_baro_corr <- baro_correct("Rochers", paste0(home_dir, "/PAD_2018_PT/Rochers/WSE"),
+
+Rochers_baro_corr <- baro_correct("Rochers", "../input/PAD/raw/Rochers/WSE",
                              Rochers_PT_corr, Rochers, baro_2018_corr, baro_2018)
-write.csv(Rochers_PT_corr, file = "Rochers_PT_data_cropped.csv")
+
+write.csv(Rochers_PT_corr, file = "../input/PAD/raw/Rochers/WSE/Rochers_PT_data_cropped.csv")
+
 Rochers_PPP_corr <- PPP_correct(name = "Rochers", pt_coords = PAD_PT_2018, 
                                   pt_concat = Rochers_baro_corr,
                                   closest_PPP = PAD_2018_PPP_50m,  year = "2018")
-setwd(paste0(home_dir, "/PAD_2018_PT/Rochers/WSE"))
-write.csv(Rochers_PPP_corr, file = "Rochers_WSE_PPP_corr.csv")
 
-setwd(paste0(home_dir, "/PAD_2018_PT"))
+write.csv(Rochers_PPP_corr, file = "../input/PAD/raw/Rochers/WSE/Rochers_WSE_PPP_corr.csv")
+
+
 Rochers <- Rochers[match(
   colnames(Rochers_PPP_corr)[2:ncol(Rochers_PPP_corr)], Rochers$ID),]
-write.csv(Rochers, "Rochers_PT_coords.csv")
+write.csv(Rochers, "../input/PAD/PT_coords/Rochers_PT_coords.csv")
 
 ```
 
@@ -645,15 +518,14 @@ write.csv(Rochers, "Rochers_PT_coords.csv")
 ##2019------
 #Chill----
 Chill <- PAD_PT[PAD_PT$River == "Chilloney's Creek",]
-setwd(paste0(home_dir, "/PAD_2019_PT"))
-write.csv(Chill, "Chill_PT_coords.csv")
+write.csv(Chill, "../input/PAD/PT_coords/Chill_PT_coords.csv")
 
-Chill_concatenated <- load_pt_files(name = "Chilloney's", wd = paste0(home_dir, "/PAD_2019_PT/Chill"),
+Chill_concatenated <- load_pt_files(name = "Chilloney's", wd = "../input/PAD/raw/Chilloneys",
                                     PT_start = as.POSIXct(Chill$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                     PT_end = as.POSIXct(Chill$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                     PT_order = c(5:2), type = "river", day_or_month = "month")
-setwd(paste0(home_dir, "/PAD_2019_PT/Chill/WSE"))
-write.csv(Chill_concatenated, file = "Chill_PT_data_raw.csv")
+
+write.csv(Chill_concatenated, file = "../input/PAD/raw/Chilloneys/WSE/Chill_PT_data_raw.csv")
 
 #manually clean data
 Chill_PT_corr <- Chill_concatenated
@@ -661,27 +533,27 @@ Chill_PT_corr[3500:nrow(Chill_PT_corr), 3]<- NA
 Chill_PT_corr[3500:nrow(Chill_PT_corr), 4]<- NA
 Chill_PT_corr[3500:nrow(Chill_PT_corr), 5]<- NA
 
-Chill_baro_corr <- baro_correct("Chill", paste0(home_dir, "/PAD_2019_PT/Chill/WSE"),
+Chill_baro_corr <- baro_correct("Chill", "../input/PAD/raw/Chilloneys/WSE/",
                                     Chill_PT_corr, Chill, baro_2019_corr, baro_2019)
-write.csv(Chill_PT_corr, file = "Chill_PT_data_corr.csv")
+write.csv(Chill_PT_corr, file = "../input/PAD/raw/Chilloneys/WSE/Chill_PT_data_corr.csv")
 
 Chill_PPP_corr <- PPP_correct(name = "Chill", pt_coords = PAD_PT_2019, 
                                   pt_concat = Chill_baro_corr,
                                   closest_PPP = PAD_2019_PPP_50m,  year = "2019")
-setwd(paste0(home_dir, "/PAD_2019_PT/Chill/WSE"))
-write.csv(Chill_PPP_corr, file = "Chill_WSE_PPP_corr.csv")
+
+write.csv(Chill_PPP_corr, file = "../input/PAD/raw/Chilloneys/WSE/Chill_WSE_PPP_corr.csv")
 
 #Embarras-----
 Embarras <- PAD_PT[PAD_PT$River == "Embarras",]
-setwd(paste0(home_dir, "/PAD_2019/PAD_2019_PT"))
-write.csv(Embarras, "Embarras_PT_coords.csv")
 
-Embarras_concatenated <- load_pt_files("Embarras", paste0(home_dir, "/PAD_2019/PAD_2019_PT/Embarras"),
+write.csv(Embarras, "../input/PAD/PT_coords/Embarras_PT_coords.csv")
+
+Embarras_concatenated <- load_pt_files("Embarras", "../input/PAD/raw/Embarras",
                                         as.POSIXct(Embarras$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                         as.POSIXct(Embarras$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                         c(2:6), type = "river", day_or_month = "month")
-setwd(paste0(home_dir, "/PAD_2019_PT/Embarras/WSE"))
-write.csv(Embarras_concatenated, file = "Embarras_PT_data_raw.csv")
+
+write.csv(Embarras_concatenated, file = "../input/PAD/raw/Embarras/WSE/Embarras_PT_data_raw.csv")
 
 #manually clean data
 Embarras_PT_corr <- Embarras_concatenated[,c(1,2,3,5,6)]
@@ -689,34 +561,26 @@ Embarras_PT_corr[3500:nrow(Embarras_PT_corr), 3]<- NA
 Embarras_PT_corr[3500:nrow(Embarras_PT_corr), 4]<- NA
 Embarras_PT_corr[3500:nrow(Embarras_PT_corr), 5]<- NA
 
-Embarras_baro_corr <- baro_correct("Embarras", paste0(home_dir, "/PAD_2019/PAD_2019_PT/Embarras/WSE"),
+Embarras_baro_corr <- baro_correct("Embarras","../input/PAD/raw/Embarras/WSE/",
                                     Embarras_PT_corr, Embarras, baro_2019_corr, baro_2019)
-write.csv(Embarras_PT_corr, file = "Embarras_PT_data_corr.csv")
+write.csv(Embarras_PT_corr, file = "../input/PAD/raw/Embarras/WSE/Embarras_PT_data_corr.csv")
 
 Embarras_PPP_corr <- PPP_correct(name = "Embarras", pt_coords = PAD_PT_2019, 
                                   pt_concat = Embarras_baro_corr,
                                   closest_PPP = PAD_2019_PPP_50m, year = "2019")
-setwd(paste0(home_dir, "/PAD_2019/PAD_2019_PT/Embarras/WSE"))
-write.csv(Embarras_PPP_corr, file = "Embarras_WSE_PPP_corr.csv")
 
-setwd("C:/Users/Merritt/Desktop/Research/PT_Paper/PAD/PAD_2019/Embarras")
-Embarras_cl <- readOGR(dsn = ".", layer = "Embarras_CL_UTM")
-Embarras_cl_coords <- Embarras_cl@lines[[1]]@Lines[[1]]@coords
-Embarras_line_corr <- line_correct(name = "Embarras", pt_coords = Embarras[,3:4], 
-                                   cl_coords = Embarras_cl_coords, pt_concat = Embarras_PPP_corr)
+write.csv(Embarras_PPP_corr, file = "../input/PAD/raw/Embarras/WSE/Embarras_WSE_PPP_corr.csv")
 
-setwd("C:/Users/Merritt/Desktop/Research/PT_Paper/PAD/PAD_2019/PAD_2019_PT/Embarras/WSE")
-write.csv(Embarras_line_corr, file = "Embarras_WSE_line_corr.csv")
 #Limon----
 Limon <- PAD_PT[PAD_PT$River == "Limon",]
-setwd(paste0(home_dir, "/PAD_2019/PAD_2019_PT"))
-write.csv(Limon, "Limon_PT_coords.csv")
 
-Limon_concatenated <- load_pt_files("Limon", paste0(home_dir, "/PAD_2019/PAD_2019_PT/Limon"),
+write.csv(Limon, "../input/PAD/PT_coords/Limon_PT_coords.csv")
+
+Limon_concatenated <- load_pt_files("Limon", "../input/PAD/raw/Limon",
                                         as.POSIXct(Limon$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                         as.POSIXct(Limon$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                         c(2:6), type = "river", day_or_month = "month")
-setwd(paste0(home_dir, "/PAD_2019/PAD_2019_PT/Limon/WSE"))
+
 write.csv(Limon_concatenated, file = "Limon_PT_data_raw.csv")
 
 #manually clean data
@@ -726,34 +590,27 @@ Limon_PT_corr[3400:nrow(Limon_PT_corr), 4]<- NA
 Limon_PT_corr[3400:nrow(Limon_PT_corr), 5]<- NA
 Limon_PT_corr[3400:nrow(Limon_PT_corr), 6]<- NA
 
-Limon_baro_corr <- baro_correct("Limon", paste0(home_dir, "/PAD_2019/PAD_2019_PT/Limon/WSE"),
+Limon_baro_corr <- baro_correct("Limon", "../input/PAD/raw/Limon/WSE/",
                                     Limon_PT_corr, Limon, baro_2019_corr, baro_2019)
-write.csv(Limon_PT_corr, file = "Limon_PT_data_corr.csv")
+write.csv(Limon_PT_corr, file = "../input/PAD/raw/Limon/WSE/Limon_PT_data_corr.csv")
 
 Limon_PPP_corr <- PPP_correct(name = "Limon", pt_coords = PAD_PT_2019, 
                                   pt_concat = Limon_baro_corr[,c(1,3:6)],
                                   closest_PPP = PAD_2019_PPP_50m, year = "2019")
-setwd(paste0(home_dir, "/PAD_2019/PAD_2019_PT/Limon/WSE"))
-write.csv(Limon_PPP_corr, file = "Limon_WSE_PPP_corr.csv")
-setwd("C:/Users/Merritt/Desktop/Research/PT_Paper/PAD/PAD_2019/Limon")
-Limon_cl <- readOGR(dsn = ".", layer = "Limon_CL_UTM")
-Limon_cl_coords <- Limon_cl@lines[[1]]@Lines[[1]]@coords
-Limon_line_corr <- line_correct(name = "Limon", pt_coords = Limon[,3:4], 
-                                   cl_coords = Limon_cl_coords, pt_concat = Limon_PPP_corr)
 
-setwd("C:/Users/Merritt/Desktop/Research/PT_Paper/PAD/PAD_2019/PAD_2019_PT/Limon/WSE")
-write.csv(Limon_line_corr, file = "Limon_WSE_line_corr.csv")
+write.csv(Limon_PPP_corr, file = "../input/PAD/raw/Limon/WSE/Limon_WSE_PPP_corr.csv")
+
+
 #Richardson----
 Richardson <- PAD_PT[PAD_PT$River == "Richardson",]
-setwd(paste0(home_dir, "/PAD_2019/PAD_2019_PT"))
-write.csv(Richardson, "Richardson_PT_coords.csv")
 
-Richardson_concatenated <- load_pt_files("Richardson", paste0(home_dir, "/PAD_2019/PAD_2019_PT/Richardson"),
+write.csv(Richardson, "../input/PAD/PT_coords/Richardson_PT_coords.csv")
+
+Richardson_concatenated <- load_pt_files("Richardson", "../input/PAD/raw/Richardson",
                                         as.POSIXct(Richardson$Start, "%m/%d/%Y %H:%M", tz = "MST"),
                                         as.POSIXct(Richardson$End, "%m/%d/%Y %H:%M", tz = "MST"),
                                         c(2:6), type = "river", day_or_month = "month")
-setwd(paste0(home_dir, "/PAD_2019/PAD_2019_PT/Richardson/WSE"))
-write.csv(Richardson_concatenated, file = "Richardson_PT_data_raw.csv")
+write.csv(Richardson_concatenated, file = "../input/PAD/raw/Richardson/WSE/Richardson_PT_data_raw.csv")
 
 #manually clean data
 Richardson_PT_corr <- Richardson_concatenated
@@ -762,23 +619,14 @@ Richardson_PT_corr[3400:nrow(Richardson_PT_corr), 4]<- NA
 Richardson_PT_corr[3400:nrow(Richardson_PT_corr), 5]<- NA
 Richardson_PT_corr[3400:nrow(Richardson_PT_corr), 6]<- NA
 
-Richardson_baro_corr <- baro_correct("Richardson", paste0(home_dir, "/PAD_2019/PAD_2019_PT/Richardson/WSE"),
+Richardson_baro_corr <- baro_correct("Richardson", "../input/PAD/raw/Richardson/WSE/",
                                     Richardson_PT_corr, Richardson, baro_2019_corr, baro_2019)
-write.csv(Richardson_PT_corr, file = "Richardson_PT_data_corr.csv")
+write.csv(Richardson_PT_corr, file = "../input/PAD/raw/Richardson/WSE/Richardson_PT_data_corr.csv")
 
 Richardson_PPP_corr <- PPP_correct(name = "Richardson", pt_coords = PAD_PT_2019, 
                                   pt_concat = Richardson_baro_corr,
                                   closest_PPP = PAD_2019_PPP_50m, year = "2019")
-setwd(paste0(home_dir, "/PAD_2019/PAD_2019_PT/Richardson/WSE"))
-write.csv(Richardson_PPP_corr, file = "Richardson_WSE_PPP_corr.csv")
-setwd("C:/Users/Merritt/Desktop/Research/PT_Paper/PAD/PAD_2019/Richardson")
-Richardson_cl <- readOGR(dsn = ".", layer = "Richardson_CL_UTM")
-Richardson_cl_coords <- Richardson_cl@lines[[1]]@Lines[[1]]@coords
-Richardson_line_corr <- line_correct(name = "Richardson", pt_coords = Richardson[,3:4], 
-                                cl_coords = Richardson_cl_coords, pt_concat = Richardson_PPP_corr)
-
-setwd("C:/Users/Merritt/Desktop/Research/PT_Paper/PAD/PAD_2019/PAD_2019_PT/Richardson/WSE")
-write.csv(Richardson_line_corr, file = "Richardson_WSE_line_corr.csv")
+write.csv(Richardson_PPP_corr, file = "../input/PAD/raw/Richardson/WSE/Richardson_WSE_PPP_corr.csv")
 
 ```
 
