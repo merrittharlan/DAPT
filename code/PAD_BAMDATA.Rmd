@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Functions
 
 ```{r Functions}
-###Run BAM for all rivers
 library(bamr)
 
 ### Functions --------
@@ -141,12 +140,11 @@ Athabasca_WSE_daily <- aggregate(. ~day, data = Athabasca_WSE, mean, na.rm = TRU
 #load Q
 PAD_2018_ADCP <- read.csv("../input/PAD/Raw/PAD_2018_ADCP.csv")
 Athabasca_qobs_df <- PAD_2018_ADCP[startsWith(as.character(PAD_2018_ADCP$Location),"ATH"),]
-Athabasca_qobs_df <- Athabasca_qobs_df %>%
-  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
 Athabasca_corr_Q <- Athabasca_qobs_df[Athabasca_qobs_df$Q>600,]
 
 Athabasca_corr_Q <- Athabasca_corr_Q %>%
   mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+
 
 #load cl and PT coords
 wd = getwd()
@@ -181,17 +179,34 @@ Athabasca_width = matrix(rep(Athabasca_corr_Q$Width, nrow(Athabasca_slope)), nro
 Athabasca_dA = calcdA_mat(w = Athabasca_width, h = t(Athabasca_WSE_corrQ))
 
 #Split into two reaches
-Athabasca_bamdata = bam_data(w = Athabasca_width, s = Athabasca_slope, dA = Athabasca_dA, Qhat = Athabasca_corr_Q$Q)
+Athabasca_data = bam_data(w = Athabasca_width, s = Athabasca_slope, dA = Athabasca_dA, Qhat = Athabasca_corr_Q$Q)
 
 Athabasca_data$dAobs[,1] = rowMeans(Athabasca_data$dAobs)
-Athabasca_rch1_data = bam_data(w = Athabasca_data$Wobs[c(1,2),43:46], Athabasca_data$Sobs[c(1,2),43:46],
+Athabasca_R1_data = bam_data(w = Athabasca_data$Wobs[c(1,2),43:46], Athabasca_data$Sobs[c(1,2),43:46],
                               dA = Athabasca_data$dAobs[c(1,2),43:46], 
-                              Qhat = Athabasca_corr_Q[Athabasca_corr_Q$coords.x2<=6475948,"Q"])
+                              Qhat = Athabasca_corr_Q[43:46,"Q"])
+
+Athabasca_R2_data = bam_data(w = Athabasca_data$Wobs[c(3:5),1:42], Athabasca_data$Sobs[c(3:5),1:42],
+                               dA = Athabasca_data$dAobs[c(3:5),1:42], 
+                               Qhat = Athabasca_corr_Q[1:42,"Q"])
 
 #Full time series
-saveRDS(Athabasca_bamdata, file = "../input/PAD/BAMdata.rds")
-```
+Athabasca_R1_full_data = PAD_bamdata(WSE_all = Athabasca_WSE[c(1:4)], WSE_Q = Athabasca_WSE_corrQ[43:46, 1:2], 
+                                       bamdata = Athabasca_R1_data,
+                                       xvec = Athabasca_xvec[1:2], rivname = "Athabasca R1", Q = Athabasca_corr_Q[43:46,])
+Athabasca_R2_full_data = PAD_bamdata(WSE_all = Athabasca_WSE[c(1:2,5,6,7)], WSE_Q = Athabasca_WSE_corrQ[1:42, 3:5], 
+                                            bamdata = Athabasca_R2_data,
+                                            xvec = Athabasca_xvec[3:5], rivname = "Athabasca R2", Q = Athabasca_corr_Q[1:42,])
+#Save
+saveRDS(Athabasca_R1_data, file = "../input/PAD/Athabasca_R1_data.rds")
+saveRDS(Athabasca_R1_full_data, file = "../input/PAD/Athabasca_R1_full_data.rds")
+saveRDS(Athabasca_R2_data, file = "../input/PAD/Athabasca_R2_data.rds")
+saveRDS(Athabasca_R2_data, file = "../input/PAD/Athabasca_R2_full_data.rds")
 
+bam_plot(Athabasca_R1_data)
+bam_plot(Athabasca_R2_data)
+
+```
 ## Coupe
 
 You can also embed plots, for example:
@@ -207,14 +222,11 @@ library(raster)
 Coupe_WSE <- read.csv("../input/PAD/Raw/Coupe/WSE/Coupe_WSE_PPP_corr.csv")
 Coupe_WSE <- Coupe_WSE %>%
   mutate(day = as.Date(new_time, format="%Y-%m-%d"))
-Coupe_WSE_daily <- aggregate(. ~day, data = Coupe_WSE, mean, na.rm = TRUE)[,c(4:ncol(Coupe_WSE))]
 
 #load Q
 PAD_2018_ADCP <- read.csv("../input/PAD/Raw/PAD_2018_ADCP.csv")
 Coupe_qobs_df <- PAD_2018_ADCP[startsWith(as.character(PAD_2018_ADCP$Location),"CP"),]
-Coupe_qobs_df <- Coupe_qobs_df %>%
-  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
-Coupe_corr_Q <- Coupe_qobs_df[Coupe_qobs_df$Q>600,]
+Coupe_corr_Q <- Coupe_qobs_df[Coupe_qobs_df$Q>100,]
 
 Coupe_corr_Q <- Coupe_corr_Q %>%
   mutate(day = as.Date(new_date, format="%Y-%m-%d"))
@@ -222,13 +234,12 @@ Coupe_corr_Q <- Coupe_corr_Q %>%
 #load cl and PT coords
 wd = getwd()
 setwd("../input/PAD/Centerline")
-Coupe_cl <-readOGR(dsn = ".", layer = "Coupe_cl_UTM")
+Coupe_cl <-readOGR(dsn = ".", layer = "Coupe_CL_UTM")
 setwd(wd)
 
 Coupe_PT_coords <- read.csv("../input/PAD/PT_coords/Coupe_PT_coords.csv")
 Coupe_PT_coords_sp <-SpatialPoints(Coupe_PT_coords[,4:5], 
                                        proj4string = crs('+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0' ))
-
 #calculate the distance between pts
 Coupe_xvec <- calc_xvec(Coupe_PT_coords_sp, Coupe_cl)
 
@@ -242,7 +253,7 @@ for(i in 1:length(Coupe_corr_Q$new_date)){
 Coupe_WSE_corrQ <- Coupe_WSE[c(Coupe_closest_time[order(Coupe_closest_time)]),c(3:7)]
 
 #Calculate slope
-Coupe_slope <- calcslope(sort(Coupe_xvec), hmat = t(Coupe_WSE_corrQ[, order(Coupe_xvec)]))
+Coupe_slope <- -1*calcslope(sort(Coupe_xvec[1:5]), hmat = t(Coupe_WSE_corrQ[, order(Coupe_xvec[1:5])]))
 Coupe_slope[1,] <- colMeans(Coupe_slope, na.rm = TRUE)
 
 #Get width from ADCP data
@@ -252,11 +263,529 @@ Coupe_width = matrix(rep(Coupe_corr_Q$Width, nrow(Coupe_slope)), nrow = nrow(Cou
 Coupe_dA = calcdA_mat(w = Coupe_width, h = t(Coupe_WSE_corrQ))
 
 #Save as bamdata
-Coupe_bamdata = bam_data(w = Coupe_width, s = Coupe_slope, dA = Coupe_dA, Qhat = Coupe_corr_Q$Q)
+Coupe_data = bam_data(w = Coupe_width, s = Coupe_slope, dA = Coupe_dA, Qhat = Coupe_corr_Q$Q)
 
-saveRDS(Coupe_bamdata, file = "../input/PAD/BAMdata.rds")
+Coupe_full_data = PAD_bamdata(WSE_all = Coupe_WSE[,c(1:7,9)], WSE_Q = Coupe_WSE_corrQ, bamdata = Coupe_data,
+                                   xvec = rev(Coupe_xvec), rivname = "Coupe", Q = Coupe_corr_Q)
 
+saveRDS(Coupe_data, file = "../input/PAD/Coupe_data.rds")
+saveRDS(Coupe_full_data, file = "../input/PAD/Coupe_full_data.rds")
 bamr::bam_plot(Coupe_bamdata)
 ```
 
+
+## Fletcher
+
+```{r Fletcher, echo=FALSE}
+library(dplyr)
+library(bamr)
+library(rgdal)
+library(sp)
+library(raster)
+
+#load WSE
+Fletcher_WSE <- read.csv("../input/PAD/Raw/Fletcher/WSE/Fletcher_WSE_PPP_corr.csv")
+Fletcher_WSE <- Fletcher_WSE %>%
+  mutate(day = as.Date(new_time, format="%Y-%m-%d"))
+Fletcher_WSE_daily <- aggregate(. ~day, data = Fletcher_WSE, mean, na.rm = TRUE)[,c(4:ncol(Fletcher_WSE))]
+
+#load Q
+PAD_2018_ADCP <- read.csv("../input/PAD/Raw/PAD_2018_ADCP.csv")
+Fletcher_qobs_df <- PAD_2018_ADCP[startsWith(as.character(PAD_2018_ADCP$Location),"FL"),]
+Fletcher_corr_Q <- Fletcher_qobs_df
+
+Fletcher_corr_Q <- Fletcher_corr_Q %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+
+#load cl and PT coords
+wd = getwd()
+setwd("../input/PAD/Centerline")
+Fletcher_cl <-readOGR(dsn = ".", layer = "Fletcher_CL_UTM")
+setwd(wd)
+
+Fletcher_PT_coords <- read.csv("../input/PAD/PT_coords/Fletcher_PT_coords.csv")
+Fletcher_PT_coords_sp <-SpatialPoints(Fletcher_PT_coords[,4:5], 
+                                       proj4string = crs('+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0' ))
+#calculate the distance between pts
+Fletcher_xvec <- calc_xvec(Fletcher_PT_coords_sp, Fletcher_cl)
+
+#find overlapping ADCP and PT times
+Fletcher_closest_time <- vector(length = length(Fletcher_corr_Q$new_date))
+for(i in 1:length(Fletcher_corr_Q$new_date)){
+  Fletcher_closest_time[i] = which.min(abs(as.POSIXct(Fletcher_WSE$new_time, tz = "MST") - 
+                                              as.POSIXct(Fletcher_corr_Q$new_date[i], tz = "MST")))
+}
+
+Fletcher_WSE_corrQ <- Fletcher_WSE[c(Fletcher_closest_time[order(Fletcher_closest_time)]),c(3,4,6,7)]
+
+#Calculate slope
+Fletcher_slope <- calcslope(sort(Fletcher_xvec[c(3:5)]), hmat = t(Fletcher_WSE_corrQ[, order(Fletcher_xvec[c(3:5)])]))
+Fletcher_slope[1,] <- colMeans(Fletcher_slope, na.rm = TRUE)
+
+#Get width from ADCP data
+Fletcher_width = matrix(rep(Fletcher_corr_Q$Width, nrow(Fletcher_slope)), nrow = nrow(Fletcher_slope), byrow= TRUE)
+
+#Calculate dA
+Fletcher_dA = calcdA_mat(w = Fletcher_width, h = t(Fletcher_WSE_corrQ[, order(Fletcher_xvec[c(3:5)])]))
+
+#Save as bamdata
+Fletcher_data = bam_data(w = Fletcher_width, s = Fletcher_slope, dA = Fletcher_dA, Qhat = Fletcher_corr_Q$Q)
+
+Fletcher_full_data = PAD_bamdata(WSE_all = Fletcher_WSE[c(1:4,6,8)], WSE_Q = Fletcher_WSE_corrQ[,c(1:3)], bamdata = Fletcher_data,
+                                      xvec = rev(Fletcher_xvec[c(3:5)]), rivname = "Fletcher", Q = Fletcher_corr_Q)
+
+saveRDS(Fletcher_data, file = "../input/PAD/Fletcher_data.rds")
+saveRDS(Fletcher_full_data, file = "../input/PAD/Fletcher_full_data.rds")
+bamr::bam_plot(Fletcher_data)
+```
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+`
+
+## Mamawi
+
+```{r Mamawi, echo=FALSE}
+library(dplyr)
+library(bamr)
+library(rgdal)
+library(sp)
+library(raster)
+
+#load WSE
+Mamawi_WSE <- read.csv("../input/PAD/Raw/Mamawi/WSE/Mamawi_WSE_PPP_corr.csv")
+Mamawi_WSE <- Mamawi_WSE %>%
+  mutate(day = as.Date(new_time, format="%Y-%m-%d"))
+
+#load Q
+PAD_2018_ADCP <- read.csv("../input/PAD/Raw/PAD_2018_ADCP.csv")
+Mamawi_qobs_df <- PAD_2018_ADCP[startsWith(as.character(PAD_2018_ADCP$Location),"M"),]
+Mamawi_corr_Q <- Mamawi_qobs_df
+
+Mamawi_corr_Q <- Mamawi_corr_Q %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+
+#load cl and PT coords
+wd = getwd()
+setwd("../input/PAD/Centerline")
+Mamawi_cl <-readOGR(dsn = ".", layer = "Mamawi_CL_UTM")
+setwd(wd)
+
+Mamawi_PT_coords <- read.csv("../input/PAD/PT_coords/Mamawi_PT_coords.csv")
+Mamawi_PT_coords_sp <-SpatialPoints(Mamawi_PT_coords[,4:5], 
+                                       proj4string = crs('+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0' ))
+#calculate the distance between pts
+Mamawi_xvec <- calc_xvec(Mamawi_PT_coords_sp, Mamawi_cl)
+
+#find overlapping ADCP and PT times
+Mamawi_closest_time <- vector(length = length(Mamawi_corr_Q$new_date))
+for(i in 1:length(Mamawi_corr_Q$new_date)){
+  Mamawi_closest_time[i] = which.min(abs(as.POSIXct(Mamawi_WSE$new_time, tz = "MST") - 
+                                              as.POSIXct(Mamawi_corr_Q$new_date[i], tz = "MST")))
+}
+
+Mamawi_WSE_corrQ <- Mamawi_WSE[c(Mamawi_closest_time[order(Mamawi_closest_time)]),c(3,4,6,8)]
+
+#Calculate slope
+Mamawi_slope <- -1*calcslope(sort(Mamawi_xvec[c(1,2,4,6)]), hmat = t(Mamawi_WSE_corrQ[, order(Mamawi_xvec[c(1,2,4,6)])]))
+Mamawi_slope[1,] <- colMeans(Mamawi_slope, na.rm = TRUE)
+
+#Get width from ADCP data
+Mamawi_width = matrix(rep(Mamawi_corr_Q$Width, nrow(Mamawi_slope)), nrow = nrow(Mamawi_slope), byrow= TRUE)
+
+#Calculate dA
+Mamawi_dA = calcdA_mat(w = Mamawi_width, h = t(Mamawi_WSE_corrQ))
+
+#Save as bamdata
+Mamawi_data = bam_data(w = Mamawi_width, s = Mamawi_slope, dA = Mamawi_dA, Qhat = Mamawi_corr_Q$Q)
+
+Mamawi_full_data = PAD_bamdata(WSE_all = Mamawi_WSE, WSE_Q = Mamawi_WSE_corrQ, bamdata = Mamawi_data,
+                                      xvec = Mamawi_xvec, rivname = "Mamawi", Q = Mamawi_corr_Q)
+
+saveRDS(Mamawi_data, file = "../input/PAD/Mamawi_data.rds")
+saveRDS(Mamawi_full_data, file = "../input/PAD/Mamawi_full_data.rds")
+bamr::bam_plot(Mamawi_data)
+```
+
+## QF
+
+```{r QF, echo=FALSE}
+library(dplyr)
+library(bamr)
+library(rgdal)
+library(sp)
+library(raster)
+
+#load WSE
+QF_WSE <- read.csv("../input/PAD/Raw/QF/WSE/QF_WSE_PPP_corr.csv")
+QF_WSE <- QF_WSE %>%
+  mutate(day = as.Date(new_time, format="%Y-%m-%d"))
+
+#load Q
+PAD_2018_ADCP <- read.csv("../input/PAD/Raw/PAD_2018_ADCP.csv")
+QF_qobs_df <- PAD_2018_ADCP[startsWith(as.character(PAD_2018_ADCP$Location),"QF"),]
+QF_corr_Q <- QF_qobs_df[QF_qobs_df$Q> 300,]
+
+QF_corr_Q <- QF_corr_Q %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+
+#load cl and PT coords
+wd = getwd()
+setwd("../input/PAD/Centerline")
+QF_cl <-readOGR(dsn = ".", layer = "QF_CL_UTM")
+setwd(wd)
+
+QF_PT_coords <- read.csv("../input/PAD/PT_coords/QF_PT_coords.csv")
+QF_PT_coords_sp <-SpatialPoints(QF_PT_coords[,4:5], 
+                                       proj4string = crs('+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0' ))
+#calculate the distance between pts
+QF_xvec <- calc_xvec(QF_PT_coords_sp, QF_cl)
+
+#find overlapping ADCP and PT times
+QF_closest_time <- vector(length = length(QF_corr_Q$new_date))
+for(i in 1:length(QF_corr_Q$new_date)){
+  QF_closest_time[i] = which.min(abs(as.POSIXct(QF_WSE$new_time, tz = "MST") - 
+                                              as.POSIXct(QF_corr_Q$new_date[i], tz = "MST")))
+}
+
+QF_WSE_corrQ <- QF_WSE[c(QF_closest_time[order(QF_closest_time)]),c(3:8)]
+
+#Calculate slope
+QF_slope <- -1*calcslope(sort(QF_xvec[c(1:6)]), hmat = t(QF_WSE_corrQ[, order(QF_xvec[c(1:6)])]))
+QF_slope[1,] <- colMeans(QF_slope, na.rm = TRUE)
+
+#Get width from ADCP data
+QF_width = matrix(rep(QF_corr_Q$Width, nrow(QF_slope)), nrow = nrow(QF_slope), byrow= TRUE)
+
+#Calculate dA
+QF_dA = calcdA_mat(w = QF_width, h = t(QF_WSE_corrQ))
+
+#Save as bamdata
+QF_data = bam_data(w = QF_width, s = QF_slope, dA = QF_dA, Qhat = QF_corr_Q$Q)
+
+QF_full_data = PAD_bamdata(WSE_all = QF_WSE[,c(1:8,10)], WSE_Q = QF_WSE_corrQ, bamdata = QF_data,
+                                      xvec = QF_xvec, rivname = "QF", Q = QF_corr_Q)
+
+saveRDS(QF_data, file = "../input/PAD/QF_data.rds")
+saveRDS(QF_full_data, file = "../input/PAD/QF_full_data.rds")
+bamr::bam_plot(QF_data)
+```
+
+
+
+## Rochers
+
+```{r Rochers, echo=FALSE}
+library(dplyr)
+library(bamr)
+library(rgdal)
+library(sp)
+library(raster)
+
+#load WSE
+Rochers_WSE <- read.csv("../input/PAD/Raw/Rochers/WSE/Rochers_WSE_PPP_corr.csv")
+Rochers_WSE <- Rochers_WSE %>%
+  mutate(day = as.Date(new_time, format="%Y-%m-%d"))
+
+#load Q
+PAD_2018_ADCP <- read.csv("../input/PAD/Raw/PAD_2018_ADCP.csv")
+Rochers_qobs_df <- PAD_2018_ADCP[startsWith(as.character(PAD_2018_ADCP$Location),"R"),]
+Rochers_corr_Q <- Rochers_qobs_df[Rochers_qobs_df$Q > 1400,]
+
+Rochers_corr_Q <- Rochers_corr_Q %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+
+#load cl and PT coords
+wd = getwd()
+setwd("../input/PAD/Centerline")
+Rochers_cl <-readOGR(dsn = ".", layer = "Rochers_CL_UTM")
+setwd(wd)
+
+Rochers_PT_coords <- read.csv("../input/PAD/PT_coords/Rochers_PT_coords.csv")
+Rochers_PT_coords_sp <-SpatialPoints(Rochers_PT_coords[,4:5], 
+                                       proj4string = crs('+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0' ))
+#calculate the distance between pts
+Rochers_xvec <- calc_xvec(Rochers_PT_coords_sp, Rochers_cl)
+
+#find overlapping ADCP and PT times
+Rochers_closest_time <- vector(length = length(Rochers_corr_Q$new_date))
+for(i in 1:length(Rochers_corr_Q$new_date)){
+  Rochers_closest_time[i] = which.min(abs(as.POSIXct(Rochers_WSE$new_time, tz = "MST") - 
+                                              as.POSIXct(Rochers_corr_Q$new_date[i], tz = "MST")))
+}
+
+Rochers_WSE_corrQ <- Rochers_WSE[c(Rochers_closest_time[order(Rochers_closest_time)]),c(3:7)]
+
+#Calculate slope
+Rochers_slope <- calcslope(rev(sort(Rochers_xvec[c(1:3,5,6)])), hmat = t(Rochers_WSE_corrQ[, order(Rochers_xvec[c(1:3,5,6)])]))
+Rochers_slope[1,] <- colMeans(Rochers_slope, na.rm = TRUE)
+
+#Get width from ADCP data
+Rochers_width = matrix(rep(Rochers_corr_Q$Width, nrow(Rochers_slope)), nrow = nrow(Rochers_slope), byrow= TRUE)
+
+#Calculate dA
+Rochers_dA = calcdA_mat(w = Rochers_width, h = t(Rochers_WSE_corrQ))
+
+#Save as bamdata
+Rochers_data = bam_data(w = Rochers_width, s = Rochers_slope, dA = Rochers_dA, Qhat = Rochers_corr_Q$Q)
+
+Rochers_R1_data = bam_data(w = Rochers_data$Wobs[c(1:3),15:32], Rochers_data$Sobs[c(1:3),15:32],
+                              dA = Rochers_data$dAobs[c(1:3),15:32], 
+                             Qhat = Rochers_corr_Q[15:32,"Q"])
+
+Rochers_R2_data = bam_data(w = Rochers_data$Wobs[c(4:5),c(1:14, 33:45)], Rochers_data$Sobs[c(4:5),c(1:14, 33:45)],
+                              dA = Rochers_data$dAobs[c(4:5),c(1:14, 33:45)], 
+                             Qhat = Rochers_corr_Q[c(1:14, 33:45),"Q"])
+
+Rochers_R1_full_data= PAD_bamdata(WSE_all = Rochers_WSE[,1:5], WSE_Q = Rochers_WSE_corrQ[15:32, 1:3], 
+                                          bamdata = Rochers_R1_data,
+                                          xvec = Rochers_xvec[1:3], rivname = "Rochers", Q = Rochers_corr_Q[15:32,])
+Rochers_R2_full_data = PAD_bamdata(WSE_all = Rochers_WSE, WSE_Q = Rochers_WSE_corrQ[c(1:14, 33:45), 4:5], 
+                                          bamdata = Rochers_R2_data,
+                                          xvec = Rochers_xvec[4:5], rivname = "Rochers", Q = Rochers_corr_Q[c(1:14, 33:45),])
+
+saveRDS(Rochers_R1_data, file = "../input/PAD/Rochers_R1_data.rds")
+saveRDS(Rochers_R2_data, file = "../input/PAD/Rochers_R2_data.rds")
+
+saveRDS(Rochers_R1_full_data, file = "../input/PAD/Rochers_R1_full_data.rds")
+saveRDS(Rochers_R2_full_data, file = "../input/PAD/Rochers_R2_full_data.rds")
+
+bamr::bam_plot(Rochers_R1_data)
+bamr::bam_plot(Rochers_R2_data)
+
+```
+
+
+## Embarras
+
+You can also embed plots, for example:
+
+```{r Embarras, echo=FALSE}
+library(dplyr)
+library(bamr)
+library(rgdal)
+library(sp)
+library(raster)
+
+#load WSE
+Embarras_WSE <- read.csv("../input/PAD/Raw/Embarras/WSE/Embarras_WSE_PPP_corr.csv")
+Embarras_WSE <- Embarras_WSE %>%
+  mutate(day = as.Date(new_time, format="%Y-%m-%d"))
+Embarras_WSE_daily <- aggregate(. ~day, data = Embarras_WSE, mean, na.rm = TRUE)[,c(4:ncol(Embarras_WSE))]
+
+#load Q
+PAD_2019_ADCP <- read.csv("../input/PAD/Raw/PAD_2019_ADCP.csv")
+Embarras_qobs_df <- PAD_2019_ADCP[startsWith(as.character(PAD_2019_ADCP$Location),"EM"),]
+Embarras_qobs_df <- Embarras_qobs_df %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+Embarras_corr_Q <- Embarras_qobs_df[Embarras_qobs_df$Q > 100 & Embarras_qobs_df$Q < 200, ]
+
+Embarras_corr_Q <- Embarras_corr_Q %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+
+
+#load cl and PT coords
+wd = getwd()
+setwd("../input/PAD/Centerline")
+Embarras_cl <-readOGR(dsn = ".", layer = "Embarras_CL_UTM")
+setwd(wd)
+
+Embarras_PT_coords <- read.csv("../input/PAD/PT_coords/Embarras_PT_coords.csv")
+Embarras_PT_coords_sp <-SpatialPoints(Embarras_PT_coords[,4:5], 
+                                       proj4string = crs('+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0' ))
+
+#calculate the distance between pts
+Embarras_xvec <- calc_xvec(Embarras_PT_coords_sp, Embarras_cl)
+
+#find overlapping ADCP and PT times
+Embarras_closest_time <- vector(length = length(Embarras_corr_Q$new_date))
+for(i in 1:length(Embarras_corr_Q$new_date)){
+  Embarras_closest_time[i] = which.min(abs(as.POSIXct(Embarras_WSE$new_time, tz = "MST") - 
+                                              as.POSIXct(Embarras_corr_Q$new_date[i], tz = "MST")))
+}
+
+Embarras_WSE_corrQ <- Embarras_WSE[c(Embarras_closest_time[order(Embarras_closest_time)]),c(3:6)]
+
+#Calculate slope
+Embarras_slope <- abs(calcslope(sort(Embarras_xvec[c(1:2,4,5)]), hmat = t(Embarras_WSE_corrQ)))
+Embarras_slope[1,] <- colMeans(Embarras_slope, na.rm = TRUE)
+
+#Get width from ADCP data
+Embarras_width = matrix(rep(as.numeric(Embarras_corr_Q$Width), nrow(Embarras_slope)), nrow = nrow(Embarras_slope), byrow= TRUE)
+
+#Calculate dA
+Embarras_dA = calcdA_mat(w = Embarras_width, h = t(Embarras_WSE_corrQ))
+
+#Split into two reaches
+Embarras_data = bam_data(w = Embarras_width, s = Embarras_slope, dA = Embarras_dA, Qhat = Embarras_corr_Q$Q)
+
+Embarras_data = bam_data(w = Embarras_data$Wobs[c(1,2),c(1:5,7,8,15:17,36,37)], 
+                              Embarras_data$Sobs[c(1,2),c(1:5,7,8,15:17,36,37)],
+                               dA = Embarras_data$dAobs[c(1,2),c(1:5,7,8,15:17,36,37)], 
+                              Qhat = Embarras_corr_Q[c(1:5,7,8,15:17,36,37),"Q"])
+
+#Full time series
+Embarras_full_data = PAD_bamdata(WSE_all = Embarras_WSE[,c(1:4)], WSE_Q = Embarras_WSE_corrQ[c(1:5,7,8,15:17,36,37), 1:2], 
+                                           bamdata = Embarras_data,
+                                           xvec = Embarras_xvec[1:2], rivname = "Embarras", 
+                                           Q = Embarras_corr_Q[c(1:5,7,8,15:17,36,37),])
+#Save
+saveRDS(Embarras_data, file = "../input/PAD/Embarras_data.rds")
+saveRDS(Embarras_full_data, file = "../input/PAD/Embarras_full_data.rds")
+
+bam_plot(Embarras_data)
+
+
+```
+
+## Limon
+
+You can also embed plots, for example:
+
+```{r Limon, echo=FALSE}
+library(dplyr)
+library(bamr)
+library(rgdal)
+library(sp)
+library(raster)
+
+#load WSE
+Limon_WSE <- read.csv("../input/PAD/Raw/Limon/WSE/Limon_WSE_PPP_corr.csv")
+Limon_WSE <- Limon_WSE %>%
+  mutate(day = as.Date(new_time, format="%Y-%m-%d"))
+Limon_WSE_daily <- aggregate(. ~day, data = Limon_WSE, mean, na.rm = TRUE)[,c(4:ncol(Limon_WSE))]
+
+#load Q
+PAD_2019_ADCP <- read.csv("../input/PAD/Raw/PAD_2019_ADCP.csv")
+Limon_qobs_df <- PAD_2019_ADCP[startsWith(as.character(PAD_2019_ADCP$Location),"NR"),]
+Limon_qobs_df <- Limon_qobs_df %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+Limon_corr_Q <- Limon_qobs_df[Limon_qobs_df$Q > 30 & Limon_qobs_df$Q < 50,]
+
+Limon_corr_Q <- Limon_corr_Q %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+
+
+#load cl and PT coords
+wd = getwd()
+setwd("../input/PAD/Centerline")
+Limon_cl <-readOGR(dsn = ".", layer = "Limon_CL_UTM")
+setwd(wd)
+
+Limon_PT_coords <- read.csv("../input/PAD/PT_coords/Limon_PT_coords.csv")
+Limon_PT_coords_sp <-SpatialPoints(Limon_PT_coords[,4:5], 
+                                       proj4string = crs('+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0' ))
+
+#calculate the distance between pts
+Limon_xvec <- calc_xvec(Limon_PT_coords_sp, Limon_cl)
+
+#find overlapping ADCP and PT times
+Limon_closest_time <- vector(length = length(Limon_corr_Q$new_date))
+for(i in 1:length(Limon_corr_Q$new_date)){
+  Limon_closest_time[i] = which.min(abs(as.POSIXct(Limon_WSE$new_time, tz = "MST") - 
+                                              as.POSIXct(Limon_corr_Q$new_date[i], tz = "MST")))
+}
+
+Limon_WSE_corrQ <- Limon_WSE[c(Limon_closest_time[order(Limon_closest_time)]),c(3:6)]
+
+#Calculate slope
+Limon_slope <- abs(calcslope(Limon_xvec[c(1,2,3,5)], hmat = t(Limon_WSE_corrQ)))
+Limon_slope[1,] <- colMeans(Limon_slope, na.rm = TRUE)
+
+#Get width from ADCP data
+Limon_width = matrix(rep(as.numeric(Limon_corr_Q$Width), nrow(Limon_slope)), nrow = nrow(Limon_slope), byrow= TRUE)
+
+#Calculate dA
+Limon_dA = calcdA_mat(w = Limon_width, h = t(Limon_WSE_corrQ))
+
+#Split into two reaches
+Limon_data = bam_data(w = Limon_width, s = Limon_slope, dA = Limon_dA, Qhat = Limon_corr_Q$Q)
+
+#Full time series
+Limon_full_data = PAD_bamdata(WSE_all = Limon_WSE, WSE_Q = Limon_WSE_corrQ, bamdata = Limon_data,
+                                   xvec = Limon_xvec, rivname = "Limon", Q = Limon_corr_Q)
+#Save
+saveRDS(Limon_data, file = "../input/PAD/Limon_data.rds")
+saveRDS(Limon_full_data, file = "../input/PAD/Limon_full_data.rds")
+
+bam_plot(Limon_data)
+
+
+```
+
+
+## Richardson
+
+You can also embed plots, for example:
+
+```{r Richardson, echo=FALSE}
+library(dplyr)
+library(bamr)
+library(rgdal)
+library(sp)
+library(raster)
+
+#load WSE
+Richardson_WSE <- read.csv("../input/PAD/Raw/Richardson/WSE/Richardson_WSE_PPP_corr.csv")
+Richardson_WSE <- Richardson_WSE %>%
+  mutate(day = as.Date(new_time, format="%Y-%m-%d"))
+Richardson_WSE_daily <- aggregate(. ~day, data = Richardson_WSE, mean, na.rm = TRUE)[,c(4:ncol(Richardson_WSE))]
+
+#load Q
+PAD_2019_ADCP <- read.csv("../input/PAD/Raw/PAD_2019_ADCP.csv")
+Richardson_qobs_df <- PAD_2019_ADCP[startsWith(as.character(PAD_2019_ADCP$Location),"R"),]
+Richardson_qobs_df <- Richardson_qobs_df %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+Richardson_corr_Q <- Richardson_qobs_df[Richardson_qobs_df$Q < 25,]
+
+Richardson_corr_Q <- Richardson_corr_Q %>%
+  mutate(day = as.Date(new_date, format="%Y-%m-%d"))
+
+
+#load cl and PT coords
+wd = getwd()
+setwd("../input/PAD/Centerline")
+Richardson_cl <-readOGR(dsn = ".", layer = "Richardson_CL_UTM")
+setwd(wd)
+
+Richardson_PT_coords <- read.csv("../input/PAD/PT_coords/Richardson_PT_coords.csv")
+Richardson_PT_coords_sp <-SpatialPoints(Richardson_PT_coords[,4:5], 
+                                       proj4string = crs('+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0' ))
+
+#calculate the distance between pts
+Richardson_xvec <- calc_xvec(Richardson_PT_coords_sp, Richardson_cl)
+
+#find overlapping ADCP and PT times
+Richardson_closest_time <- vector(length = length(Richardson_corr_Q$new_date))
+for(i in 1:length(Richardson_corr_Q$new_date)){
+  Richardson_closest_time[i] = which.min(abs(as.POSIXct(Richardson_WSE$new_time, tz = "MST") - 
+                                              as.POSIXct(Richardson_corr_Q$new_date[i], tz = "MST")))
+}
+
+Richardson_WSE_corrQ <- Richardson_WSE[c(Richardson_closest_time[order(Richardson_closest_time)]),c(3:7)]
+
+#Calculate slope
+Richardson_slope <- abs(calcslope(Richardson_xvec, hmat = t(Richardson_WSE_corrQ)))
+Richardson_slope[1,] <- colMeans(Richardson_slope, na.rm = TRUE)
+
+#Get width from ADCP data
+Richardson_width = matrix(rep(as.numeric(Richardson_corr_Q$Width), nrow(Richardson_slope)), nrow = nrow(Richardson_slope), byrow= TRUE)
+
+#Calculate dA
+Richardson_dA = calcdA_mat(w = Richardson_width, h = t(Richardson_WSE_corrQ))
+
+#Split into two reaches
+Richardson_data = bam_data(w = Richardson_width, s = Richardson_slope, dA = Richardson_dA, Qhat = Richardson_corr_Q$Q)
+
+#Full time series
+Richardson_full_data = PAD_bamdata(WSE_all = Richardson_WSE, WSE_Q = Richardson_WSE_corrQ, bamdata = Richardson_data,
+                                        xvec = Richardson_xvec, rivname = "Richardson", Q = Richardson_corr_Q)
+#Save
+saveRDS(Richardson_data, file = "../input/PAD/Richardson_data.rds")
+saveRDS(Richardson_full_data, file = "../input/PAD/Richardson_full_data.rds")
+
+bam_plot(Richardson_data)
+
+
+```
+
+
+

@@ -10,7 +10,7 @@ library(ggpubr)
 
 #Test PAD dataset------------
 Athabasca_rch1_data <- readRDS(file = "Athabasca_rch1_data.rds")
-Athabasca_rch1_data <- readRDS(file = "Athabasca_rch1_data.rds")
+Athabasca_rch2_data <- readRDS(file = "Athabasca_rch2_data.rds")
 Coupe_data <- readRDS(file = "Coupe_data.rds")
 Embarras_data <- readRDS(file = "Embarras_data.rds")
 Fletcher_data <- readRDS(file = "Fletcher_data.rds")

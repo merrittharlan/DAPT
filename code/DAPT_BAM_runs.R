@@ -1,5 +1,5 @@
 #Merritt Harlan
-#BAM Sensitivity for TOWNS dataset
+#BAM Sensitivity for TOWNS dataset-- all data can be found in /output/BAMdata
 library(bamr)
 library(ggplot2)
 library(viridis)
