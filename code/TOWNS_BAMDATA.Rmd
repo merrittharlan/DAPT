@@ -242,6 +242,7 @@ Tanana_slope_15_min[1,] <- colMeans(Tanana_slope_15_min, na.rm = TRUE)
 #### format and save bamdata
 ```{r Tanana save, message=FALSE, warning=FALSE}
 library(bamr)
+library(zoo)
 Tanana_bam_daily = bam_data(w = Tanana_width_daily, s = Tanana_slope_daily, dA = Tanana_slope_daily, Qhat = as.numeric(unlist(Tanana_WSE_daily[,2])))
 
 Tanana_bam_6_hrs = bam_data(w = Tanana_width_6_hrs, s = Tanana_slope_6_hrs, dA = Tanana_slope_6_hrs, Qhat = as.numeric(unlist(Tanana_WSE_6_hrs[,2])))

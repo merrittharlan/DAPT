@@ -7,7 +7,7 @@ Data: Included in the "input" folder are pressure transducer and river centerlin
 
 Code: To reproduce results from the paper, and estimate discharge using the Bayesian-AMHG-Manning algorithm (BAM), follow the scripts in this order:
 
-1) Format the water surface elevation data in both the gauged rivers (TOWNS), and ungauged rivers (PAD), with TOWNS_WSE.Rmd, and PAD_WSE.Rmd
+1) Format the water surface elevation data in both the gauged rivers (TOWNS), and ungauged rivers (PAD), with TOWNS_WSE.Rmd, and PAD_WSE.Rmd. For the PAD, format the ADCP discharge data with PAD_Discharge.Rmd.
 
 2) Estimate width from the digital elevation model (downloaded either from the National Elevation Dataset, or Canadian Digital Elevation Model), and create BAM data files in order to run BAM with TOWNS_BAMDATA.Rmd, and PAD_BAMDATA.Rmd
 
